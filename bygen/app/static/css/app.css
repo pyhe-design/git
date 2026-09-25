@@ -1,0 +1,8 @@
+.page-card { height: 100%; transition: box-shadow 0.15s ease; }
+.page-card:hover { box-shadow: 0 0.5em 1.5em rgba(10, 10, 10, 0.15); }
+
+/* SimpleMDE sits inside Bulma's .control; keep its toolbar above CodeMirror. */
+.editor-toolbar { background: var(--bulma-scheme-main, #fff); opacity: 1; }
+.editor-toolbar a { color: var(--bulma-text, #2c3e50) !important; }
+.CodeMirror { min-height: 320px; }
+.editor-preview, .editor-preview-side { background: var(--bulma-scheme-main-bis, #fafafa); }

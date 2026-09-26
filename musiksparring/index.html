@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusikSparring Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * { font-family: 'Inter', sans-serif; }
+
+        body {
+            background: #0a0a0a;
+            color: #e5e5e5;
+        }
+
+        .grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        .animate-fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Piano keys. Order matters: later rules win among the !important states. */
+        .piano-key {
+            position: relative;
+            transition: all 0.1s ease;
+            cursor: pointer;
+        }
+        .piano-key.white {
+            background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+            border: 1px solid #333;
+            width: 40px;
+            height: 120px;
+        }
+        .piano-key.black {
+            position: absolute;
+            top: 0;
+            width: 24px;
+            height: 80px;
+            background: linear-gradient(to bottom, #222 0%, #000 100%);
+            border: 1px solid #000;
+            z-index: 10;
+        }
+        .piano-key.in-scale { background: linear-gradient(to bottom, #4ade80 0%, #22c55e 100%) !important; }
+        .piano-key.in-scale.black { background: linear-gradient(to bottom, #16a34a 0%, #15803d 100%) !important; }
+        .piano-key.active { background: #f97316 !important; }
+        .piano-key.root { background: linear-gradient(to bottom, #fb923c 0%, #ea580c 100%) !important; }
+        .piano-key.playing { transform: translateY(2px); filter: brightness(1.2); }
+
+        .piano-key:focus-visible,
+        .beat-cell:focus-visible,
+        button:focus-visible {
+            outline: 2px solid #f97316;
+            outline-offset: 2px;
+        }
+
+        /* Beat grid */
+        .beat-grid {
+            display: grid;
+            gap: 0.25rem;
+            grid-template-columns: repeat(16, minmax(0, 1fr));
+        }
+        @media (max-width: 640px) {
+            .beat-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+        }
+        .beat-cell {
+            cursor: pointer;
+            transition: all 0.1s ease;
+            border: 2px solid #374151;
+            min-width: 20px;
+        }
+        .beat-cell:hover { border-color: #f97316; }
+        .beat-cell.strong { border-width: 3px; border-color: #6b7280; }
+        .beat-cell.active { border-color: #fb923c; }
+        .beat-cell.playing { background: #fbbf24 !important; transform: scale(1.05); }
+
+        .loading-spinner {
+            border: 3px solid #333;
+            border-top: 3px solid #f97316;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .bg-gray-750 { background-color: #2d2d35; }
+    </style>
+</head>
+<body class="grain">
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+        // ==================== SAFE STORAGE ====================
+        // localStorage throws in private mode / blocked storage. Never let that kill the app.
+        const Store = {
+            get(key, fallback) {
+                try {
+                    const raw = localStorage.getItem(key);
+                    return raw === null ? fallback : JSON.parse(raw);
+                } catch {
+                    return fallback;
+                }
+            },
+            set(key, value) {
+                try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+            }
+        };
+
+        // ==================== MUSIC THEORY ====================
+        const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const ENHARMONIC = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#', Cb: 'B', Fb: 'E', 'E#': 'F', 'B#': 'C' };
+
+        const SCALES = {
+            'Major (Ionian)': { steps: [0, 2, 4, 5, 7, 9, 11], names: ['R', 'M2', 'M3', 'P4', 'P5', 'M6', 'M7'] },
+            'Minor (Aeolian)': { steps: [0, 2, 3, 5, 7, 8, 10], names: ['R', 'M2', 'm3', 'P4', 'P5', 'm6', 'm7'] },
+            'Dorian': { steps: [0, 2, 3, 5, 7, 9, 10], names: ['R', 'M2', 'm3', 'P4', 'P5', 'M6', 'm7'] },
+            'Phrygian': { steps: [0, 1, 3, 5, 7, 8, 10], names: ['R', 'm2', 'm3', 'P4', 'P5', 'm6', 'm7'] },
+            'Lydian': { steps: [0, 2, 4, 6, 7, 9, 11], names: ['R', 'M2', 'M3', 'A4', 'P5', 'M6', 'M7'] },
+            'Mixolydian': { steps: [0, 2, 4, 5, 7, 9, 10], names: ['R', 'M2', 'M3', 'P4', 'P5', 'M6', 'm7'] },
+            'Locrian': { steps: [0, 1, 3, 5, 6, 8, 10], names: ['R', 'm2', 'm3', 'P4', 'd5', 'm6', 'm7'] },
+            'Harmonic Minor': { steps: [0, 2, 3, 5, 7, 8, 11], names: ['R', 'M2', 'm3', 'P4', 'P5', 'm6', 'M7'] },
+            'Melodic Minor': { steps: [0, 2, 3, 5, 7, 9, 11], names: ['R', 'M2', 'm3', 'P4', 'P5', 'M6', 'M7'] },
+            'Pentatonic Major': { steps: [0, 2, 4, 7, 9], names: ['R', 'M2', 'M3', 'P5', 'M6'] },
+            'Pentatonic Minor': { steps: [0, 3, 5, 7, 10], names: ['R', 'm3', 'P4', 'P5', 'm7'] },
+            'Blues': { steps: [0, 3, 5, 6, 7, 10], names: ['R', 'm3', 'P4', 'd5', 'P5', 'm7'] }
+        };
+
+        const MusicTheory = {
+            /** 'Bb' -> 'A#', 'c#' -> 'C#', junk -> null */
+            normalizeNote(raw) {
+                if (!raw) return null;
+                const n = raw.charAt(0).toUpperCase() + raw.slice(1);
+                const mapped = ENHARMONIC[n] || n;
+                return NOTES.includes(mapped) ? mapped : null;
+            },
+
+            /** Parses free-text keys like "Am", "C dur", "F# moll", "Bb minor". */
+            parseKey(text) {
+                const m = (text || '').trim().match(/^([A-Ga-g][#b]?)(.*)$/);
+                if (!m) return { root: 'C', minor: false };
+                const root = this.normalizeNote(m[1]) || 'C';
+                const rest = m[2];
+                const minor = /^\s*(m(?!aj)|-)/.test(rest) || /\b(moll|mol|minor|min)\b/i.test(rest);
+                return { root, minor };
+            },
+
+            /** Returns [{note, octave}] ascending from the root in octave 4. */
+            scaleNotes(root, scaleType) {
+                const rootIdx = NOTES.indexOf(root);
+                return SCALES[scaleType].steps.map(step => {
+                    const abs = rootIdx + step;
+                    return { note: NOTES[abs % 12], octave: 4 + Math.floor(abs / 12) };
+                });
+            },
+
+            /**
+             * Parses a chord symbol into root + intervals. Returns null for garbage.
+             * Handles: maj7, m7, m7b5/ø, dim(7), aug/+, sus2/sus4, 6, 7/9/11/13, slash bass (ignored).
+             */
+            parseChord(symbol) {
+                const m = (symbol || '').trim().match(/^([A-G][#b]?)([^\s/]*)/);
+                if (!m) return null;
+                const root = this.normalizeNote(m[1]);
+                if (!root) return null;
+                const q = m[2];
+
+                let kind, intervals;
+                if (/^(maj7|M7|Δ)/.test(q)) { kind = 'maj7'; intervals = [0, 4, 7, 11]; }
+                else if (/^(m7b5|ø)/.test(q)) { kind = 'm7b5'; intervals = [0, 3, 6, 10]; }
+                else if (/^dim7/.test(q)) { kind = 'dim7'; intervals = [0, 3, 6, 9]; }
+                else if (/^(dim|°)/.test(q)) { kind = 'dim'; intervals = [0, 3, 6]; }
+                else if (/^(aug|\+)/.test(q)) { kind = 'aug'; intervals = [0, 4, 8]; }
+                else if (/^sus2/.test(q)) { kind = 'sus2'; intervals = [0, 2, 7]; }
+                else if (/^sus/.test(q)) { kind = 'sus4'; intervals = [0, 5, 7]; }
+                else if (/^(m|min|-)/.test(q)) {
+                    const rest = q.replace(/^(min|m|-)/, '');
+                    if (/^(7|9|11)/.test(rest)) { kind = 'min7'; intervals = [0, 3, 7, 10]; }
+                    else { kind = 'min'; intervals = [0, 3, 7]; }
+                }
+                else if (/^(7|9|11|13)/.test(q)) { kind = 'dom7'; intervals = [0, 4, 7, 10]; }
+                else if (/^6/.test(q)) { kind = 'maj6'; intervals = [0, 4, 7, 9]; }
+                else { kind = 'maj'; intervals = [0, 4, 7]; }
+
+                const rootIdx = NOTES.indexOf(root);
+                const notes = intervals.map(i => {
+                    const abs = rootIdx + i;
+                    return { note: NOTES[abs % 12], octave: 4 + Math.floor(abs / 12) };
+                });
+                return { symbol: symbol.trim(), root, kind, notes };
+            }
+        };
+
+        // ==================== AUDIO ENGINE (singleton) ====================
+        // One AudioContext for the whole app. The old code built a new AudioContext on
+        // every render of every component (useRef(new AudioEngine())) and hit the browser cap.
+        const AudioEngine = (() => {
+            let ctx = null;
+            let noiseBuffer = null;
+
+            const context = () => {
+                if (!ctx) {
+                    const Ctor = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctor) return null;
+                    ctx = new Ctor();
+                }
+                if (ctx.state === 'suspended') ctx.resume();
+                return ctx;
+            };
+
+            const noise = (c) => {
+                if (!noiseBuffer) {
+                    noiseBuffer = c.createBuffer(1, c.sampleRate, c.sampleRate);
+                    const data = noiseBuffer.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                }
+                const src = c.createBufferSource();
+                src.buffer = noiseBuffer;
+                return src;
+            };
+
+            const frequency = (note, octave) => {
+                const midi = (octave + 1) * 12 + NOTES.indexOf(note);
+                return 440 * Math.pow(2, (midi - 69) / 12);
+            };
+
+            /** Enveloped tone: short attack avoids clicks, exp decay to silence. */
+            const tone = (c, note, octave, when, duration, peak) => {
+                const osc = c.createOscillator();
+                const gain = c.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(frequency(note, octave), when);
+                gain.gain.setValueAtTime(0.0001, when);
+                gain.gain.linearRampToValueAtTime(peak, when + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+                osc.connect(gain).connect(c.destination);
+                osc.start(when);
+                osc.stop(when + duration + 0.05);
+            };
+
+            return {
+                context,
+
+                playNote(note, octave = 4, duration = 0.4, when) {
+                    const c = context();
+                    if (!c) return;
+                    tone(c, note, octave, when ?? c.currentTime, duration, 0.3);
+                },
+
+                playChord(notes, duration = 2) {
+                    const c = context();
+                    if (!c || !notes.length) return;
+                    const peak = 0.4 / notes.length;
+                    notes.forEach(({ note, octave }) => tone(c, note, octave, c.currentTime, duration, peak));
+                },
+
+                playSequence(notes, stepSeconds = 0.25, duration = 0.4) {
+                    const c = context();
+                    if (!c) return;
+                    const t0 = c.currentTime + 0.05;
+                    notes.forEach(({ note, octave }, i) => tone(c, note, octave, t0 + i * stepSeconds, duration, 0.3));
+                },
+
+                playDrum(type, when) {
+                    const c = context();
+                    if (!c) return;
+                    const t = when ?? c.currentTime;
+
+                    if (type === 'kick') {
+                        const osc = c.createOscillator();
+                        const gain = c.createGain();
+                        osc.frequency.setValueAtTime(150, t);
+                        osc.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+                        gain.gain.setValueAtTime(1, t);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                        osc.connect(gain).connect(c.destination);
+                        osc.start(t);
+                        osc.stop(t + 0.45);
+                        return;
+                    }
+
+                    // Snare and hi-hat: filtered noise (the old square/triangle oscillators sounded nothing like drums).
+                    const src = noise(c);
+                    const filter = c.createBiquadFilter();
+                    const gain = c.createGain();
+                    filter.type = 'highpass';
+                    const isSnare = type === 'snare';
+                    filter.frequency.value = isSnare ? 1000 : 7000;
+                    const len = isSnare ? 0.18 : 0.05;
+                    gain.gain.setValueAtTime(isSnare ? 0.6 : 0.3, t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + len);
+                    src.connect(filter).connect(gain).connect(c.destination);
+                    src.start(t);
+                    src.stop(t + len + 0.02);
+
+                    if (isSnare) {
+                        const body = c.createOscillator();
+                        const bodyGain = c.createGain();
+                        body.type = 'triangle';
+                        body.frequency.setValueAtTime(180, t);
+                        bodyGain.gain.setValueAtTime(0.4, t);
+                        bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                        body.connect(bodyGain).connect(c.destination);
+                        body.start(t);
+                        body.stop(t + 0.12);
+                    }
+                }
+            };
+        })();
+
+        // ==================== SHARED PIANO KEYBOARD ====================
+        const WHITE_KEYS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+        const BLACK_KEYS = { 'C#': 1, 'D#': 2, 'F#': 4, 'G#': 5, 'A#': 6 };
+        const KEY_WIDTH = 40;
+
+        const Keyboard = ({ highlighted = [], root, highlightClass, playing = [] }) => {
+            const classFor = (note) => [
+                highlighted.includes(note) ? highlightClass : '',
+                note === root ? 'root' : '',
+                playing.includes(note) ? 'playing' : ''
+            ].join(' ');
+
+            const onKey = (e, note) => {
+                if (e.type === 'click' || e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    AudioEngine.playNote(note, 4, 0.4);
+                }
+            };
+
+            return (
+                <div className="relative mx-auto" style={{ width: `${WHITE_KEYS.length * KEY_WIDTH}px`, height: '120px' }}>
+                    <div className="flex">
+                        {WHITE_KEYS.map(note => (
+                            <div
+                                key={note}
+                                className={`piano-key white ${classFor(note)}`}
+                                onClick={(e) => onKey(e, note)}
+                                onKeyDown={(e) => onKey(e, note)}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Afspil tone ${note}`}
+                            >
+                                <span className="absolute bottom-2 left-0 right-0 text-center text-xs text-gray-600 font-semibold">{note}</span>
+                            </div>
+                        ))}
+                    </div>
+                    {Object.entries(BLACK_KEYS).map(([note, pos]) => (
+                        <div
+                            key={note}
+                            className={`piano-key black ${classFor(note)}`}
+                            style={{ left: `${pos * KEY_WIDTH - 12}px` }}
+                            onClick={(e) => onKey(e, note)}
+                            onKeyDown={(e) => onKey(e, note)}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Afspil tone ${note}`}
+                        />
+                    ))}
+                </div>
+            );
+        };
+
+        // ==================== SCALE HELPER ====================
+        const ScaleHelper = ({ selectedKey }) => {
+            const parsed = useMemo(() => MusicTheory.parseKey(selectedKey), [selectedKey]);
+            const [mode, setMode] = useState(parsed.minor ? 'Minor (Aeolian)' : 'Major (Ionian)');
+            const [showIntervals, setShowIntervals] = useState(false);
+
+            // Follow the project key: "Am" should open in minor, not major.
+            useEffect(() => {
+                setMode(parsed.minor ? 'Minor (Aeolian)' : 'Major (Ionian)');
+            }, [parsed.minor]);
+
+            const root = parsed.root;
+            const scale = MusicTheory.scaleNotes(root, mode);
+            const pitchClasses = scale.map(n => n.note);
+
+            const playScale = () => {
+                // Ascend and land on the octave root, instead of wrapping back down.
+                AudioEngine.playSequence([...scale, { note: root, octave: scale[0].octave + 1 }], 0.22, 0.35);
+            };
+
+            return (
+                <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-semibold text-orange-400">🎼 Scale/Mode Helper</h3>
+                        <button
+                            onClick={playScale}
+                            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-medium transition-colors"
+                            aria-label="Afspil skala"
+                        >
+                            ▶ Afspil Skala
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-300">Vælg Mode/Skala</label>
+                            <select
+                                value={mode}
+                                onChange={(e) => setMode(e.target.value)}
+                                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500"
+                            >
+                                {Object.keys(SCALES).map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex items-end">
+                            <button
+                                onClick={() => setShowIntervals(v => !v)}
+                                className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+                            >
+                                {showIntervals ? '🎹 Vis Noder' : '📊 Vis Intervaller'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                        <p className="text-sm text-gray-400 mb-2">Toner i {root} {mode}:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {scale.map((n, i) => (
+                                <button
+                                    key={`${n.note}-${i}`}
+                                    className="px-4 py-2 bg-green-500 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                                    onClick={() => AudioEngine.playNote(n.note, n.octave, 0.4)}
+                                    aria-label={`Afspil tone ${n.note}`}
+                                >
+                                    {showIntervals ? SCALES[mode].names[i] : n.note}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <Keyboard highlighted={pitchClasses} root={root} highlightClass="in-scale" />
+
+                    <div className="mt-4 p-3 bg-gray-800 rounded-lg text-sm text-gray-400">
+                        💡 Grønne taster = toner i skalaen | Orange = grundtone | Klik eller brug Enter/Space for at høre tone
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== RHYTHM PATTERN ====================
+        const STEPS = 16;
+        const emptyPattern = () => ({ kick: Array(STEPS).fill(false), snare: Array(STEPS).fill(false), hihat: Array(STEPS).fill(false) });
+
+        const PRESETS = {
+            basic: {
+                kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+                snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+                hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+            },
+            disco: {
+                kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+                snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+                hihat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0]
+            },
+            breakbeat: {
+                kick: [1,0,0,0, 0,0,1,0, 0,1,0,0, 0,0,0,0],
+                snare: [0,0,0,0, 1,0,0,1, 0,0,0,0, 1,0,0,0],
+                hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+            }
+        };
+
+        const RhythmPattern = () => {
+            const [patterns, setPatterns] = useState(emptyPattern);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [currentStep, setCurrentStep] = useState(-1);
+            const [bpm, setBpm] = useState(120);
+            const [preset, setPreset] = useState('');
+
+            // Refs so the running scheduler sees live edits (the old setInterval closure froze
+            // the pattern and BPM at the moment Play was pressed).
+            const patternsRef = useRef(patterns);
+            const bpmRef = useRef(bpm);
+            const timerRef = useRef(null);
+            const uiTimeoutsRef = useRef([]);
+            patternsRef.current = patterns;
+            bpmRef.current = bpm;
+
+            const toggleBeat = (track, index) => {
+                setPatterns(prev => ({ ...prev, [track]: prev[track].map((b, i) => i === index ? !b : b) }));
+            };
+
+            const stop = useCallback(() => {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+                uiTimeoutsRef.current.forEach(clearTimeout);
+                uiTimeoutsRef.current = [];
+                setIsPlaying(false);
+                setCurrentStep(-1);
+            }, []);
+
+            // Lookahead scheduler: audio is timed by the AudioContext clock, not by setInterval jitter.
+            const start = () => {
+                const c = AudioEngine.context();
+                if (!c) return;
+                const LOOKAHEAD = 0.1;
+                let step = 0;
+                let nextTime = c.currentTime + 0.05;
+
+                const tick = () => {
+                    while (nextTime < c.currentTime + LOOKAHEAD) {
+                        const p = patternsRef.current;
+                        if (p.kick[step]) AudioEngine.playDrum('kick', nextTime);
+                        if (p.snare[step]) AudioEngine.playDrum('snare', nextTime);
+                        if (p.hihat[step]) AudioEngine.playDrum('hihat', nextTime);
+
+                        const shownStep = step;
+                        const delayMs = Math.max(0, (nextTime - c.currentTime) * 1000);
+                        uiTimeoutsRef.current.push(setTimeout(() => setCurrentStep(shownStep), delayMs));
+                        if (uiTimeoutsRef.current.length > 64) uiTimeoutsRef.current.splice(0, 32);
+
+                        nextTime += 60 / bpmRef.current / 4; // 16th notes
+                        step = (step + 1) % STEPS;
+                    }
+                };
+
+                tick();
+                timerRef.current = setInterval(tick, 25);
+                setIsPlaying(true);
+            };
+
+            const togglePlay = () => (isPlaying ? stop() : start());
+
+            const clearPattern = () => {
+                setPatterns(emptyPattern());
+                setPreset('');
+                stop();
+            };
+
+            const loadPreset = (name) => {
+                setPreset(name);
+                const p = PRESETS[name];
+                if (p) setPatterns({ kick: p.kick.map(Boolean), snare: p.snare.map(Boolean), hihat: p.hihat.map(Boolean) });
+            };
+
+            useEffect(() => stop, [stop]);
+
+            const tracks = [
+                { name: 'Kick', key: 'kick', color: 'bg-blue-500' },
+                { name: 'Snare', key: 'snare', color: 'bg-red-500' },
+                { name: 'Hi-Hat', key: 'hihat', color: 'bg-yellow-500' }
+            ];
+
+            return (
+                <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-semibold text-orange-400">🥁 Rhythm Pattern</h3>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={togglePlay}
+                                className={`px-4 py-2 ${isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'} rounded-lg text-sm font-medium transition-colors`}
+                                aria-label={isPlaying ? 'Stop afspilning' : 'Afspil mønster'}
+                            >
+                                {isPlaying ? '⏹ Stop' : '▶ Afspil'}
+                            </button>
+                            <button
+                                onClick={clearPattern}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+                                aria-label="Ryd mønster"
+                            >
+                                🗑️ Ryd
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-300">BPM: {bpm}</label>
+                            <input
+                                type="range" min="60" max="200" value={bpm}
+                                onChange={(e) => setBpm(Number(e.target.value))}
+                                className="w-full accent-orange-500"
+                                aria-label="Juster BPM"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-300">Presets</label>
+                            <select
+                                value={preset}
+                                onChange={(e) => loadPreset(e.target.value)}
+                                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500"
+                            >
+                                <option value="" disabled>Vælg preset...</option>
+                                <option value="basic">Basic Rock</option>
+                                <option value="disco">Disco</option>
+                                <option value="breakbeat">Breakbeat</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {tracks.map(track => (
+                            <div key={track.key}>
+                                <div className="flex items-center mb-2">
+                                    <div className={`w-3 h-3 rounded-full ${track.color} mr-2`}></div>
+                                    <span className="text-sm font-medium text-gray-300">{track.name}</span>
+                                </div>
+                                <div className="beat-grid">
+                                    {patterns[track.key].map((active, i) => (
+                                        <div
+                                            key={`${track.key}-${i}`}
+                                            onClick={() => toggleBeat(track.key, i)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleBeat(track.key, i); }
+                                            }}
+                                            role="checkbox"
+                                            aria-checked={active}
+                                            aria-label={`${track.name} trin ${i + 1}`}
+                                            tabIndex={0}
+                                            className={`beat-cell h-12 rounded ${active ? `active ${track.color}` : 'bg-gray-800'} ${i % 4 === 0 ? 'strong' : ''} ${isPlaying && currentStep === i ? 'playing' : ''}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 p-3 bg-gray-800 rounded-lg text-sm text-gray-400">
+                        💡 Klik eller brug Enter/Space på celler for at toggle beats | Fede streger = downbeats | Gul = aktuel position
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== CHORD VOICINGS ====================
+        const PianoVoicing = ({ chord }) => {
+            const [playing, setPlaying] = useState([]);
+            const timeoutRef = useRef(null);
+            const pitchClasses = chord ? chord.notes.map(n => n.note) : [];
+
+            useEffect(() => () => clearTimeout(timeoutRef.current), []);
+
+            const play = () => {
+                if (!chord) return;
+                AudioEngine.playChord(chord.notes);
+                setPlaying(pitchClasses);
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = setTimeout(() => setPlaying([]), 2000);
+            };
+
+            return (
+                <div className="bg-gray-900 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-semibold text-gray-400">
+                            Piano Voicing {chord && <span className="text-orange-400">— {chord.symbol} ({pitchClasses.join(' ')})</span>}
+                        </h4>
+                        <button
+                            onClick={play}
+                            disabled={!chord}
+                            className="px-3 py-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-sm font-medium transition-colors"
+                            aria-label="Afspil akkord"
+                        >
+                            ▶ Afspil
+                        </button>
+                    </div>
+                    <Keyboard highlighted={pitchClasses} root={chord?.root} highlightClass="active" playing={playing} />
+                </div>
+            );
+        };
+
+        // Frets per string, low E (6) -> high e (1). -1 = muted.
+        const OPEN_SHAPES = {
+            'C': [-1, 3, 2, 0, 1, 0], 'C7': [-1, 3, 2, 3, 1, 0], 'Cmaj7': [-1, 3, 2, 0, 0, 0],
+            'D': [-1, -1, 0, 2, 3, 2], 'Dm': [-1, -1, 0, 2, 3, 1], 'D7': [-1, -1, 0, 2, 1, 2], 'Dm7': [-1, -1, 0, 2, 1, 1],
+            'E': [0, 2, 2, 1, 0, 0], 'Em': [0, 2, 2, 0, 0, 0], 'E7': [0, 2, 0, 1, 0, 0], 'Em7': [0, 2, 0, 0, 0, 0],
+            'Fmaj7': [-1, -1, 3, 2, 1, 0],
+            'G': [3, 2, 0, 0, 0, 3], 'G7': [3, 2, 0, 0, 0, 1],
+            'A': [-1, 0, 2, 2, 2, 0], 'Am': [-1, 0, 2, 2, 1, 0], 'A7': [-1, 0, 2, 0, 2, 0], 'Am7': [-1, 0, 2, 0, 1, 0],
+            'B7': [-1, 2, 1, 2, 0, 2]
+        };
+        // Movable barre shapes rooted on the low E string.
+        const E_SHAPES = { maj: [0, 2, 2, 1, 0, 0], min: [0, 2, 2, 0, 0, 0], dom7: [0, 2, 0, 1, 0, 0], min7: [0, 2, 0, 0, 0, 0], maj7: [0, 2, 1, 1, 0, 0] };
+        const KIND_SUFFIX = { maj: '', min: 'm', dom7: '7', min7: 'm7', maj7: 'maj7' };
+        const TUNING = [4, 9, 2, 7, 11, 4]; // E A D G B E as pitch-class indexes
+
+        const guitarShape = (chord) => {
+            if (!chord || !(chord.kind in KIND_SUFFIX)) return null;
+            const open = OPEN_SHAPES[chord.root + KIND_SUFFIX[chord.kind]];
+            if (open) return open;
+            const offset = (NOTES.indexOf(chord.root) - 4 + 12) % 12;
+            return E_SHAPES[chord.kind].map(f => (f < 0 ? -1 : f + offset));
+        };
+
+        const GuitarVoicing = ({ chord }) => {
+            const frets = guitarShape(chord);
+            const W = 150, H = 180, left = 20, top = 30, gapX = 22, gapY = 28, rows = 5;
+
+            if (!frets) {
+                return (
+                    <div className="bg-gray-900 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-gray-400 mb-4">Guitar Voicing</h4>
+                        <p className="text-sm text-gray-500">{chord ? `Ingen diagram for ${chord.symbol} endnu.` : 'Vælg en akkord.'}</p>
+                    </div>
+                );
+            }
+
+            const fretted = frets.filter(f => f > 0);
+            const maxFret = Math.max(0, ...fretted);
+            const base = maxFret <= rows ? 1 : Math.min(...fretted);
+            const rootIdx = NOTES.indexOf(chord.root);
+
+            return (
+                <div className="bg-gray-900 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-gray-400 mb-4">
+                        Guitar Voicing <span className="text-orange-400">— {chord.symbol}</span>
+                    </h4>
+                    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="mx-auto" role="img" aria-label={`Guitargreb for ${chord.symbol}`}>
+                        {base === 1
+                            ? <rect x={left} y={top - 4} width={gapX * 5} height={4} fill="#ddd" />
+                            : <text x={left + gapX * 5 + 6} y={top + gapY / 2 + 4} fill="#9ca3af" fontSize="11">{base}fr</text>}
+                        {[...Array(rows + 1)].map((_, r) => (
+                            <line key={`f${r}`} x1={left} x2={left + gapX * 5} y1={top + r * gapY} y2={top + r * gapY} stroke="#555" />
+                        ))}
+                        {frets.map((_, s) => (
+                            <line key={`s${s}`} x1={left + s * gapX} x2={left + s * gapX} y1={top} y2={top + rows * gapY} stroke="#888" />
+                        ))}
+                        {frets.map((f, s) => {
+                            const x = left + s * gapX;
+                            if (f < 0) return <text key={`m${s}`} x={x} y={top - 10} fill="#9ca3af" fontSize="11" textAnchor="middle">×</text>;
+                            if (f === 0) return <circle key={`o${s}`} cx={x} cy={top - 13} r={4} fill="none" stroke="#9ca3af" />;
+                            const isRoot = (TUNING[s] + f) % 12 === rootIdx;
+                            const y = top + (f - base + 0.5) * gapY;
+                            return <circle key={`d${s}`} cx={x} cy={y} r={8} fill={isRoot ? '#ea580c' : '#f97316'} stroke="#fdba74" strokeWidth={isRoot ? 2 : 1} />;
+                        })}
+                    </svg>
+                </div>
+            );
+        };
+
+        // ==================== LLM INTEGRATION ====================
+        // External API calls happen ONLY in callClaude / callOpenAI below. The API key goes
+        // straight from this browser to the provider; there is no backend.
+        const MODELS = {
+            claude: [
+                { id: 'claude-opus-5', label: 'Claude Opus 5 (bedst)' },
+                { id: 'claude-sonnet-5', label: 'Claude Sonnet 5 (billigere)' },
+                { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (hurtigst)' }
+            ]
+        };
+        const DEFAULT_OPENAI_MODEL = 'gpt-4o';
+        const SECTIONS = ['questions', 'directions', 'chords', 'melodies', 'rhythm', 'arrangement', 'production', 'lyrics', 'actions'];
+        const REQUEST_TIMEOUT_MS = 180000;
+
+        const stringList = (description) => ({ type: 'array', description, items: { type: 'string' } });
+
+        // One schema for both providers. Guarantees parseable output instead of regex-scraping prose.
+        const RESPONSE_SCHEMA = {
+            type: 'object',
+            additionalProperties: false,
+            required: SECTIONS,
+            properties: {
+                questions: stringList('2-4 korte afklarende spørgsmål'),
+                directions: stringList('3-5 kreative retninger at udforske'),
+                chords: {
+                    type: 'array',
+                    description: '4-6 akkordprogressioner',
+                    items: {
+                        type: 'object',
+                        additionalProperties: false,
+                        required: ['name', 'chords', 'description'],
+                        properties: {
+                            name: { type: 'string', description: 'Kort navn, fx "i-VI-III-VII"' },
+                            chords: { type: 'array', description: 'Akkordsymboler i rækkefølge, fx ["Am","F","C","G"]', items: { type: 'string' } },
+                            description: { type: 'string', description: 'Hvorfor den virker og hvordan den bruges' }
+                        }
+                    }
+                },
+                melodies: stringList('3-4 melodiske ideer eller motiver'),
+                rhythm: stringList('3-4 rytmiske patterns eller groove-ideer'),
+                arrangement: stringList('3-4 arrangement-forslag'),
+                production: stringList('3-4 produktion/mix tips'),
+                lyrics: stringList('3-4 tekstlige temaer eller vinkler'),
+                actions: stringList('3-5 konkrete næste skridt')
+            }
+        };
+
+        // Static instructions live in the system prompt; per-request data goes in the user turn.
+        const SYSTEM_PROMPT = `Du er en erfaren musikproducer og kreativ coach. Du giver konkrete, specifikke og direkte anvendelige forslag til musikprojekter.
+
+Regler:
+- Svar på dansk.
+- Akkordsymboler skrives i standardnotation (C, Am, F#m7, Bbmaj7, G7, Dsus4) — ét symbol pr. element i "chords".
+- Progressioner skal passe til den angivne tonalitet, hvis en er givet.
+- Undgå generiske råd; knyt hvert forslag til genre, stemning og referencer.`;
+
+        const buildUserMessage = (p) => `Projektinfo:
+Genre: ${p.genre || 'ikke specificeret'}
+Mood/Stemning: ${p.mood || 'ikke specificeret'}
+BPM: ${p.bpm || 'ikke specificeret'}
+Tonalitet: ${p.key || 'ikke specificeret'}
+Referencer: ${p.references || 'ingen'}
+Eksisterende materiale: ${p.existing || 'intet'}
+Begrænsninger: ${p.constraints || 'ingen'}
+Mål: ${p.goals || 'ikke specificeret'}`;
+
+        const fetchWithTimeout = async (url, options) => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+            try {
+                return await fetch(url, { ...options, signal: controller.signal });
+            } catch (err) {
+                if (err.name === 'AbortError') throw new Error(`Timeout efter ${REQUEST_TIMEOUT_MS / 1000}s. Prøv igen eller vælg en hurtigere model.`);
+                throw new Error(`Netværksfejl: ${err.message}. Tjek forbindelsen (eller CORS/adblocker).`);
+            } finally {
+                clearTimeout(timer);
+            }
+        };
+
+        const describeHttpError = async (provider, response) => {
+            let detail = '';
+            try {
+                const body = await response.json();
+                detail = body?.error?.message || JSON.stringify(body);
+            } catch {
+                detail = await response.text().catch(() => '');
+            }
+            const hints = {
+                400: 'Ugyldig forespørgsel',
+                401: 'Ugyldig API-nøgle',
+                403: 'Nøglen har ikke adgang til denne model',
+                404: 'Model findes ikke',
+                413: 'Forespørgslen er for stor',
+                429: 'Rate limit ramt — vent lidt',
+                500: 'Serverfejl hos udbyderen',
+                529: 'Udbyderen er overbelastet — prøv igen om lidt'
+            };
+            return new Error(`${provider} (${response.status}) ${hints[response.status] || ''}: ${detail}`.trim());
+        };
+
+        /** Validates the shape so a partial/odd response fails loudly instead of rendering garbage. */
+        const validateResult = (obj) => {
+            if (!obj || typeof obj !== 'object') throw new Error('Svaret var ikke et JSON-objekt');
+            for (const key of SECTIONS) {
+                if (!Array.isArray(obj[key])) throw new Error(`Svaret mangler feltet "${key}"`);
+            }
+            return obj;
+        };
+
+        const LLMService = {
+            async generate(params, { provider, apiKey, model }) {
+                const user = buildUserMessage(params);
+                return provider === 'claude'
+                    ? this.callClaude(user, apiKey, model)
+                    : this.callOpenAI(user, apiKey, model);
+            },
+
+            // EXTERNAL CALL: https://api.anthropic.com/v1/messages
+            async callClaude(userMessage, apiKey, model) {
+                const isFrontier = model === 'claude-opus-5' || model === 'claude-sonnet-5';
+                const isOpus = model === 'claude-opus-5';
+
+                const headers = {
+                    'content-type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    // Required for calling the API directly from a browser. Without it: CORS failure.
+                    'anthropic-dangerous-direct-browser-access': 'true'
+                };
+                if (isOpus) headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+
+                const body = {
+                    model,
+                    max_tokens: 16000,
+                    system: SYSTEM_PROMPT,
+                    messages: [{ role: 'user', content: userMessage }],
+                    output_config: {
+                        format: { type: 'json_schema', schema: RESPONSE_SCHEMA },
+                        // Creative brainstorm, interactive UI: medium effort keeps latency sane. Haiku 4.5 rejects effort.
+                        ...(isFrontier ? { effort: 'medium' } : {})
+                    },
+                    // On a safety-classifier decline, re-run server-side on Anthropic's recommended fallback model.
+                    ...(isOpus ? { fallbacks: 'default' } : {})
+                };
+
+                const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw await describeHttpError('Claude API', response);
+
+                const data = await response.json();
+                if (data.stop_reason === 'refusal') {
+                    throw new Error(`Claude afviste forespørgslen${data.stop_details?.explanation ? `: ${data.stop_details.explanation}` : ''}.`);
+                }
+                if (data.stop_reason === 'max_tokens') {
+                    throw new Error('Svaret blev afkortet (max_tokens). Prøv igen med kortere input.');
+                }
+
+                // Opus 5 thinks by default, so content[0] can be a thinking block. Only read text blocks.
+                const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+                if (!text) throw new Error('Tomt svar fra Claude');
+
+                let parsed;
+                try { parsed = JSON.parse(text); } catch { throw new Error('Kunne ikke parse JSON fra Claude-svar'); }
+
+                return {
+                    result: validateResult(parsed),
+                    meta: { model: data.model, input: data.usage?.input_tokens, output: data.usage?.output_tokens }
+                };
+            },
+
+            // EXTERNAL CALL: https://api.openai.com/v1/chat/completions
+            async callOpenAI(userMessage, apiKey, model) {
+                const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json', 'authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            { role: 'system', content: SYSTEM_PROMPT },
+                            { role: 'user', content: userMessage }
+                        ],
+                        response_format: {
+                            type: 'json_schema',
+                            json_schema: { name: 'musiksparring', strict: true, schema: RESPONSE_SCHEMA }
+                        }
+                    })
+                });
+                if (!response.ok) throw await describeHttpError('OpenAI API', response);
+
+                const data = await response.json();
+                const choice = data.choices?.[0];
+                if (choice?.message?.refusal) throw new Error(`OpenAI afviste: ${choice.message.refusal}`);
+                if (choice?.finish_reason === 'length') throw new Error('Svaret blev afkortet. Prøv igen.');
+
+                let parsed;
+                try { parsed = JSON.parse(choice?.message?.content || ''); } catch { throw new Error('Kunne ikke parse JSON fra OpenAI-svar'); }
+
+                return {
+                    result: validateResult(parsed),
+                    meta: { model: data.model, input: data.usage?.prompt_tokens, output: data.usage?.completion_tokens }
+                };
+            }
+        };
+
+        // ==================== MAIN APP ====================
+        const EMPTY_PARAMS = { genre: '', mood: '', bpm: '', key: '', references: '', existing: '', constraints: '', goals: '' };
+
+        const SECTION_TITLES = {
+            questions: '💭 Afklarende Spørgsmål',
+            directions: '🎯 Kreative Retninger',
+            melodies: '🎵 Melodiske Ideer',
+            rhythm: '🥁 Rytmiske Patterns',
+            arrangement: '🎼 Arrangement',
+            production: '🎚️ Produktion',
+            lyrics: '✍️ Tekstlige Temaer',
+            actions: '✅ Next Steps'
+        };
+
+        const FIELDS = [
+            { key: 'genre', label: 'Genre', placeholder: 'f.eks. Pop, Rock, Electronic' },
+            { key: 'mood', label: 'Mood/Stemning', placeholder: 'f.eks. Energisk, Melankolsk' },
+            { key: 'bpm', label: 'BPM', placeholder: 'f.eks. 120, 90-100' },
+            { key: 'key', label: 'Tonalitet', placeholder: 'f.eks. C dur, Am, F# moll' },
+            { key: 'references', label: 'Referencer', placeholder: 'f.eks. The Weeknd, Daft Punk', wide: true },
+            { key: 'existing', label: 'Eksisterende Materiale', placeholder: 'Beskriv hvad du allerede har...', wide: true, multiline: true },
+            { key: 'constraints', label: 'Begrænsninger', placeholder: 'f.eks. Kun software, tidslimit' },
+            { key: 'goals', label: 'Mål', placeholder: 'f.eks. Radio-ready single' }
+        ];
+
+        const inputClass = 'w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500';
+
+        function App() {
+            const [params, setParams] = useState(() => ({ ...EMPTY_PARAMS, ...Store.get('musiksparring_params', {}) }));
+            const [apiKey, setApiKey] = useState(() => Store.get('musiksparring_api_key', ''));
+            const [provider, setProvider] = useState(() => Store.get('musiksparring_provider', 'claude'));
+            const [claudeModel, setClaudeModel] = useState(() => {
+                const saved = Store.get('musiksparring_claude_model', MODELS.claude[0].id);
+                return MODELS.claude.some(m => m.id === saved) ? saved : MODELS.claude[0].id;
+            });
+            const [openaiModel, setOpenaiModel] = useState(() => Store.get('musiksparring_openai_model', DEFAULT_OPENAI_MODEL));
+            const [showApiSettings, setShowApiSettings] = useState(false);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [result, setResult] = useState(null);
+            const [meta, setMeta] = useState(null);
+            const [selectedChord, setSelectedChord] = useState(null);
+            const [activeTab, setActiveTab] = useState('input');
+
+            // Params autosave, so there is nothing "unsaved" to warn about on unload.
+            useEffect(() => { Store.set('musiksparring_params', params); }, [params]);
+
+            const updateParam = (key, value) => setParams(prev => ({ ...prev, [key]: value }));
+
+            const keyLooksValid = (p, k) => (p === 'claude' ? k.startsWith('sk-ant-') : k.startsWith('sk-') && !k.startsWith('sk-ant-'));
+
+            const saveSettings = () => {
+                const key = apiKey.trim();
+                if (!keyLooksValid(provider, key)) {
+                    setError(provider === 'claude' ? 'Claude API-nøgle skal starte med "sk-ant-"' : 'OpenAI API-nøgle skal starte med "sk-" (ikke "sk-ant-")');
+                    return;
+                }
+                setApiKey(key);
+                Store.set('musiksparring_api_key', key);
+                Store.set('musiksparring_provider', provider);
+                Store.set('musiksparring_claude_model', claudeModel);
+                Store.set('musiksparring_openai_model', openaiModel.trim() || DEFAULT_OPENAI_MODEL);
+                setShowApiSettings(false);
+                setError('');
+            };
+
+            const handleGenerate = async () => {
+                const key = apiKey.trim();
+                if (!key || !keyLooksValid(provider, key)) {
+                    setError('Indtast en gyldig API-nøgle for den valgte udbyder i indstillingerne');
+                    setShowApiSettings(true);
+                    return;
+                }
+
+                setLoading(true);
+                setError('');
+
+                try {
+                    const model = provider === 'claude' ? claudeModel : (openaiModel.trim() || DEFAULT_OPENAI_MODEL);
+                    const { result: suggestions, meta: info } = await LLMService.generate(params, { provider, apiKey: key, model });
+                    setResult(suggestions);
+                    setMeta(info);
+                    setSelectedChord(null);
+                    setActiveTab('results');
+
+                    const history = Store.get('musiksparring_history', []);
+                    Store.set('musiksparring_history', [
+                        { timestamp: new Date().toISOString(), params, result: suggestions },
+                        ...(Array.isArray(history) ? history : [])
+                    ].slice(0, 10));
+                } catch (err) {
+                    setError(err.message || 'Der opstod en fejl ved generering af forslag');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const selectChord = (symbol) => {
+                const parsed = MusicTheory.parseChord(symbol);
+                if (!parsed) return;
+                setSelectedChord(parsed);
+                AudioEngine.playChord(parsed.notes, 1.5);
+            };
+
+            return (
+                <div className="min-h-screen p-4 sm:p-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="mb-12 text-center">
+                            <h1 className="text-4xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                                MusikSparring Pro
+                            </h1>
+                            <p className="text-gray-400 text-lg">Din AI Creative Coach med fuld musik-værktøjskasse</p>
+
+                            <div className="mt-6 flex flex-wrap justify-center gap-4">
+                                {['input', 'tools', 'results'].map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        disabled={tab === 'results' && !result}
+                                        className={`px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                            activeTab === tab ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                        }`}
+                                    >
+                                        {tab === 'input' && '📝 Input'}
+                                        {tab === 'tools' && '🎹 Værktøjer'}
+                                        {tab === 'results' && '✨ Resultater'}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setShowApiSettings(v => !v)}
+                                    className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors"
+                                >
+                                    ⚙️ API
+                                </button>
+                            </div>
+                        </div>
+
+                        {showApiSettings && (
+                            <div className="mb-8 p-6 bg-gray-900 rounded-xl border border-gray-800 animate-fade-in">
+                                <h3 className="text-lg font-semibold mb-4 text-orange-400">API Indstillinger</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-300">Udbyder</label>
+                                        <select value={provider} onChange={(e) => setProvider(e.target.value)} className={inputClass}>
+                                            <option value="claude">Claude (Anthropic)</option>
+                                            <option value="openai">OpenAI</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-300">Model</label>
+                                        {provider === 'claude' ? (
+                                            <select value={claudeModel} onChange={(e) => setClaudeModel(e.target.value)} className={inputClass}>
+                                                {MODELS.claude.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={openaiModel}
+                                                onChange={(e) => setOpenaiModel(e.target.value)}
+                                                placeholder={DEFAULT_OPENAI_MODEL}
+                                                className={inputClass}
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-300">API Key</label>
+                                        <input
+                                            type="password"
+                                            value={apiKey}
+                                            onChange={(e) => setApiKey(e.target.value)}
+                                            placeholder={provider === 'claude' ? 'sk-ant-...' : 'sk-...'}
+                                            autoComplete="off"
+                                            className={inputClass}
+                                        />
+                                        <p className="mt-2 text-xs text-gray-500">
+                                            {provider === 'claude' ? 'Hent nøglen på console.anthropic.com' : 'Hent nøglen på platform.openai.com'}.
+                                            {' '}Nøglen gemmes i klartekst i denne browsers localStorage og sendes direkte til udbyderen. Brug en nøgle med lav spend-limit.
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={saveSettings}
+                                        className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg font-medium transition-colors"
+                                    >
+                                        Gem Indstillinger
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'input' && (
+                            <div className="animate-fade-in">
+                                <div className="mb-8 p-8 bg-gray-900/50 rounded-xl border border-gray-800">
+                                    <h2 className="text-2xl font-semibold mb-6 text-orange-400">Projektinfo</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {FIELDS.map(f => (
+                                            <div key={f.key} className={f.wide ? 'md:col-span-2' : ''}>
+                                                <label htmlFor={`f-${f.key}`} className="block text-sm font-medium mb-2 text-gray-300">{f.label}</label>
+                                                {f.multiline ? (
+                                                    <textarea
+                                                        id={`f-${f.key}`}
+                                                        value={params[f.key]}
+                                                        onChange={(e) => updateParam(f.key, e.target.value)}
+                                                        placeholder={f.placeholder}
+                                                        rows={3}
+                                                        className={inputClass}
+                                                    />
+                                                ) : (
+                                                    <input
+                                                        id={`f-${f.key}`}
+                                                        type="text"
+                                                        value={params[f.key]}
+                                                        onChange={(e) => updateParam(f.key, e.target.value)}
+                                                        placeholder={f.placeholder}
+                                                        className={inputClass}
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button
+                                        onClick={handleGenerate}
+                                        disabled={loading}
+                                        className="mt-8 w-full px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold text-lg transition-all shadow-lg hover:shadow-xl"
+                                    >
+                                        {loading ? 'Genererer...' : '🎵 Generer Kreative Forslag'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'tools' && (
+                            <div className="space-y-6 animate-fade-in">
+                                <ScaleHelper selectedKey={params.key} />
+                                <RhythmPattern />
+                            </div>
+                        )}
+
+                        {error && (
+                            <div role="alert" className="mb-8 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-300 animate-fade-in break-words">
+                                {error}
+                            </div>
+                        )}
+
+                        {loading && (
+                            <div className="mb-8 flex flex-col items-center justify-center py-12 animate-fade-in">
+                                <div className="loading-spinner mb-4"></div>
+                                <p className="text-gray-400">Arbejder på dine kreative forslag...</p>
+                            </div>
+                        )}
+
+                        {activeTab === 'results' && result && (
+                            <div className="space-y-6 animate-fade-in">
+                                {meta && (
+                                    <p className="text-xs text-gray-500 text-right">
+                                        {meta.model} · {meta.input ?? '?'} input / {meta.output ?? '?'} output tokens
+                                    </p>
+                                )}
+
+                                {result.questions?.length > 0 && (
+                                    <Section title={SECTION_TITLES.questions} items={result.questions} />
+                                )}
+
+                                {result.chords?.length > 0 && (
+                                    <div className="p-6 bg-gray-900/50 rounded-xl border border-gray-800">
+                                        <h3 className="text-xl font-semibold mb-4 text-orange-400">🎹 Akkordprogressioner</h3>
+                                        <div className="space-y-3 mb-6">
+                                            {result.chords.map((prog, i) => {
+                                                // Tolerate legacy string entries.
+                                                const p = typeof prog === 'string'
+                                                    ? { name: prog, chords: prog.split(/[\s\-–|,]+/).filter(Boolean), description: '' }
+                                                    : prog;
+                                                return (
+                                                    <div key={i} className="p-3 bg-gray-800 rounded-lg">
+                                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                            <span className="text-sm text-gray-400 mr-2">{p.name}</span>
+                                                            {p.chords.map((c, j) => {
+                                                                const valid = !!MusicTheory.parseChord(c);
+                                                                const selected = selectedChord?.symbol === c.trim();
+                                                                return (
+                                                                    <button
+                                                                        key={j}
+                                                                        onClick={() => selectChord(c)}
+                                                                        disabled={!valid}
+                                                                        className={`px-3 py-1 rounded font-semibold text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                                                            selected ? 'bg-orange-500 text-white' : 'bg-gray-700 hover:bg-gray-600'
+                                                                        }`}
+                                                                    >
+                                                                        {c}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                        {p.description && <p className="text-sm text-gray-300 mt-2">{p.description}</p>}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {selectedChord && (
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+                                                <PianoVoicing chord={selectedChord} />
+                                                <GuitarVoicing chord={selectedChord} />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {['directions', 'melodies', 'rhythm', 'arrangement', 'production', 'lyrics', 'actions'].map(section => (
+                                    result[section]?.length > 0 && (
+                                        <Section key={section} title={SECTION_TITLES[section]} items={result[section]} />
+                                    )
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const Section = ({ title, items }) => (
+            <div className="p-6 bg-gray-900/50 rounded-xl border border-gray-800">
+                <h3 className="text-xl font-semibold mb-4 text-orange-400">{title}</h3>
+                <ul className="space-y-2 list-disc list-inside">
+                    {items.map((item, i) => <li key={i} className="text-gray-300">{String(item)}</li>)}
+                </ul>
+            </div>
+        );
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

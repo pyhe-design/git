@@ -1,0 +1,2899 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a0b0f" />
+  <meta name="description" content="MusikSparring Pro – AI creative coach for musikere med lokal-først AI (Ollama, LM Studio) og indbyggede musikværktøjer." />
+  <title>MusikSparring Pro</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ff7a1a'/%3E%3Crect x='14' y='30' width='7' height='20' rx='3' fill='%23fff'/%3E%3Crect x='25' y='18' width='7' height='32' rx='3' fill='%23fff'/%3E%3Crect x='36' y='24' width='7' height='26' rx='3' fill='%23fff'/%3E%3Crect x='47' y='12' width='7' height='38' rx='3' fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
+  <style>
+/* MusikSparring Pro v3 — design system */
+:root {
+  color-scheme: dark;
+  --bg: #0a0b0f;
+  --bg-2: #0f1117;
+  --bg-3: #151821;
+  --card: rgba(255, 255, 255, 0.035);
+  --card-hover: rgba(255, 255, 255, 0.055);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --text: #eceef4;
+  --text-2: #b4b8c8;
+  --muted: #7d8296;
+  --accent: #ff7a1a;
+  --accent-2: #ffb347;
+  --accent-soft: rgba(255, 122, 26, 0.14);
+  --teal: #2dd4bf;
+  --teal-soft: rgba(45, 212, 191, 0.14);
+  --violet: #8b7cff;
+  --violet-soft: rgba(139, 124, 255, 0.16);
+  --ok: #3ddc97;
+  --danger: #ff5c7a;
+  --danger-soft: rgba(255, 92, 122, 0.14);
+  --warn: #ffd166;
+  --radius: 18px;
+  --radius-sm: 11px;
+  --shadow: 0 20px 50px -24px rgba(0, 0, 0, 0.8);
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Syne', var(--font);
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rail: 92px;
+  --topbar: 64px;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 8% -10%, rgba(255, 122, 26, 0.16), transparent 60%),
+    radial-gradient(800px 600px at 100% 100%, rgba(139, 124, 255, 0.14), transparent 60%),
+    radial-gradient(600px 400px at 60% 40%, rgba(45, 212, 191, 0.05), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 48px);
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.45;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+}
+#root { position: relative; z-index: 1; }
+
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--accent-2); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+::selection { background: rgba(255, 122, 26, 0.35); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Shell ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--topbar);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  background: rgba(10, 11, 15, 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+.brand-mark {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #ff4d6d);
+  display: flex; align-items: flex-end; justify-content: center; gap: 3px; padding: 8px 7px;
+  box-shadow: 0 8px 24px -8px rgba(255, 122, 26, 0.7);
+}
+.brand-mark i { display: block; width: 4px; background: #fff; border-radius: 2px; height: 40%; animation: eq 1.1s ease-in-out infinite; }
+.brand-mark i:nth-child(2) { animation-delay: 0.15s; }
+.brand-mark i:nth-child(3) { animation-delay: 0.3s; }
+.brand-mark i:nth-child(4) { animation-delay: 0.45s; }
+@keyframes eq { 0%, 100% { height: 30%; } 50% { height: 100%; } }
+.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+.brand-name small { display: block; font-family: var(--font); font-weight: 500; font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.topbar-spacer { flex: 1; }
+
+.provider-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 13px;
+  color: var(--text-2);
+  max-width: 46vw;
+  transition: border-color 0.15s, background 0.15s;
+}
+.provider-pill:hover { border-color: var(--line-strong); background: var(--card-hover); }
+.provider-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05); }
+.provider-pill.is-demo .dot { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.provider-pill.is-local .dot { background: var(--teal); box-shadow: 0 0 10px var(--teal); }
+.provider-pill.is-cloud .dot { background: var(--violet); box-shadow: 0 0 10px var(--violet); }
+.provider-pill.is-busy .dot { animation: pulse 0.9s ease-in-out infinite; }
+.provider-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.provider-pill b { font-weight: 600; color: var(--text); }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.6; } }
+
+.nav {
+  position: fixed; z-index: 30;
+  display: flex; gap: 6px;
+  background: rgba(13, 14, 20, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+}
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  border: 0; background: transparent; color: var(--muted);
+  border-radius: 14px; padding: 10px 6px; min-width: 64px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  transition: color 0.15s, background 0.15s, transform 0.15s;
+  position: relative;
+}
+.nav-btn svg { width: 22px; height: 22px; }
+.nav-btn:hover:not(:disabled) { color: var(--text); background: var(--card-hover); }
+.nav-btn.is-active { color: var(--text); background: var(--accent-soft); }
+.nav-btn.is-active::after { content: ''; position: absolute; width: 18px; height: 3px; border-radius: 3px; background: var(--accent); bottom: 4px; }
+.nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.nav-btn .badge { position: absolute; top: 6px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+.main { padding: 28px 20px 40px; }
+.container { max-width: 1180px; margin: 0 auto; }
+
+@media (min-width: 900px) {
+  .nav { left: 14px; top: calc(var(--topbar) + 18px); flex-direction: column; padding: 8px; border-radius: 22px; width: calc(var(--rail) - 28px + 16px); }
+  .main { padding-left: calc(var(--rail) + 8px); }
+}
+@media (max-width: 899px) {
+  .nav { left: 12px; right: 12px; bottom: 12px; padding: 6px; border-radius: 20px; justify-content: space-around; }
+  .nav-btn { flex: 1; }
+  .main { padding-bottom: 110px; }
+  .brand-name small { display: none; }
+}
+
+.view { animation: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Typography blocks ---------- */
+.hero { margin-bottom: 26px; display: grid; gap: 10px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-2); }
+.hero-title { font-size: clamp(30px, 4.6vw, 48px); font-weight: 800; line-height: 1.05; }
+.hero-title em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--accent-2) 60%, var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-sub { color: var(--text-2); max-width: 640px; font-size: 16px; }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  position: relative;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s;
+}
+.card.is-interactive:hover { border-color: var(--line-strong); background: var(--card-hover); }
+.card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.card-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.card-sub { color: var(--muted); font-size: 13px; }
+.card-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.section-icon {
+  width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent-2); flex: none;
+}
+.section-icon svg { width: 18px; height: 18px; }
+.section-icon.teal { background: var(--teal-soft); color: var(--teal); }
+.section-icon.violet { background: var(--violet-soft); color: var(--violet); }
+.section-icon.ok { background: rgba(61, 220, 151, 0.14); color: var(--ok); }
+.section-icon.warn { background: rgba(255, 209, 102, 0.14); color: var(--warn); }
+
+.stack { display: grid; gap: 18px; }
+.grid-2 { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+.grid-3 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grow { flex: 1; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono { font-family: var(--font-mono); font-size: 0.92em; }
+
+/* ---------- Forms ---------- */
+.field { display: grid; gap: 7px; }
+.label { font-size: 12.5px; font-weight: 600; color: var(--text-2); letter-spacing: 0.02em; display: flex; justify-content: space-between; gap: 8px; }
+.label .hint { font-weight: 400; color: var(--muted); }
+.input, .select, .textarea {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 44px;
+}
+.input::placeholder, .textarea::placeholder { color: #5e6377; }
+.input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.textarea { resize: vertical; min-height: 96px; }
+.select { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
+.input.is-invalid { border-color: var(--danger); }
+input[type='range'] { width: 100%; accent-color: var(--accent); }
+.form-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.form-grid .span-2 { grid-column: span 2; }
+@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } .form-grid .span-2 { grid-column: auto; } }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--line); background: transparent; color: var(--text-2);
+  border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 500;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--line-strong); color: var(--text); }
+.chip.is-on { background: var(--accent-soft); border-color: rgba(255, 122, 26, 0.5); color: var(--accent-2); }
+.chip.teal.is-on { background: var(--teal-soft); border-color: rgba(45, 212, 191, 0.5); color: var(--teal); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--line); background: var(--bg-3); color: var(--text);
+  border-radius: var(--radius-sm); padding: 10px 16px; font-weight: 600; font-size: 14px;
+  transition: all 0.15s; white-space: nowrap; min-height: 42px;
+}
+.btn svg { width: 16px; height: 16px; }
+.btn:hover:not(:disabled) { border-color: var(--line-strong); transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary {
+  border: 0; color: #fff;
+  background: linear-gradient(135deg, var(--accent), #ff4d6d);
+  box-shadow: 0 10px 30px -12px rgba(255, 122, 26, 0.9);
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-ghost { background: transparent; }
+.btn-danger { color: var(--danger); border-color: rgba(255, 92, 122, 0.35); background: var(--danger-soft); }
+.btn-sm { padding: 6px 11px; min-height: 34px; font-size: 13px; border-radius: 9px; }
+.btn-icon { padding: 8px; min-height: 36px; width: 36px; }
+.btn-lg { padding: 15px 24px; font-size: 16px; min-height: 54px; border-radius: 14px; }
+.kbd { font-family: var(--font-mono); font-size: 11px; padding: 2px 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 5px; color: var(--muted); background: rgba(255, 255, 255, 0.04); }
+
+.alert { border-radius: var(--radius-sm); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.alert svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.alert.err { background: var(--danger-soft); border: 1px solid rgba(255, 92, 122, 0.35); color: #ffb3c0; }
+.alert.info { background: var(--teal-soft); border: 1px solid rgba(45, 212, 191, 0.3); color: #b2f0e6; }
+.alert.warn { background: rgba(255, 209, 102, 0.1); border: 1px solid rgba(255, 209, 102, 0.3); color: #ffe6a8; }
+
+.progress-line { height: 3px; border-radius: 3px; overflow: hidden; background: var(--line); position: relative; }
+.progress-line::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: slide 1.2s linear infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); border-top-color: #fff; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty { text-align: center; padding: 48px 20px; color: var(--muted); display: grid; gap: 10px; justify-items: center; }
+.empty svg { width: 42px; height: 42px; opacity: 0.5; }
+
+/* ---------- Results ---------- */
+.summary {
+  border-radius: var(--radius); padding: 22px 24px;
+  background: linear-gradient(135deg, rgba(255, 122, 26, 0.18), rgba(139, 124, 255, 0.12));
+  border: 1px solid rgba(255, 178, 71, 0.3);
+  display: grid; gap: 10px;
+}
+.summary p { font-size: 17px; line-height: 1.55; }
+.meta-line { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.meta-line b { color: var(--text-2); font-weight: 600; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; counter-reset: li; }
+.list li { position: relative; padding-left: 30px; color: var(--text-2); line-height: 1.5; }
+.list li::before {
+  counter-increment: li; content: counter(li);
+  position: absolute; left: 0; top: 2px; width: 20px; height: 20px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  background: rgba(255, 255, 255, 0.06); color: var(--muted);
+}
+.list.check li::before { content: '✓'; color: var(--ok); background: rgba(61, 220, 151, 0.12); }
+.list.q li::before { content: '?'; color: var(--violet); background: var(--violet-soft); }
+
+.prog { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--bg-2); display: grid; gap: 10px; transition: border-color 0.15s; }
+.prog.is-active { border-color: rgba(255, 122, 26, 0.5); box-shadow: 0 0 0 3px var(--accent-soft); }
+.prog-head { display: flex; align-items: center; gap: 10px; }
+.prog-label { font-weight: 700; font-size: 14px; }
+.prog-chords { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chord-pill {
+  font-family: var(--font-mono); font-weight: 600; font-size: 14px;
+  padding: 7px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg-3); color: var(--text);
+  transition: all 0.15s;
+}
+.chord-pill:hover { border-color: var(--accent); color: var(--accent-2); transform: translateY(-1px); }
+.chord-pill.is-active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 18px -4px var(--accent); }
+.chord-pill.is-now { background: var(--teal); border-color: var(--teal); color: #042; }
+.chord-arrow { color: var(--muted); font-size: 12px; }
+.prog-note { color: var(--muted); font-size: 13px; }
+
+/* ---------- Piano ---------- */
+.piano-wrap { overflow-x: auto; padding-bottom: 6px; }
+.piano { position: relative; height: 150px; display: flex; width: max-content; margin: 0 auto; border-radius: 0 0 8px 8px; }
+.key { position: relative; border: 0; padding: 0; transition: background 0.12s, transform 0.08s; }
+.key.white {
+  width: 44px; height: 150px; margin-right: 1px;
+  background: linear-gradient(180deg, #f6f6f8 0%, #e2e3ea 100%);
+  border-radius: 0 0 6px 6px;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.12);
+}
+.key.black {
+  position: absolute; top: 0; width: 28px; height: 94px; z-index: 2; margin-left: -14px;
+  background: linear-gradient(180deg, #2a2d38 0%, #090a0e 100%);
+  border-radius: 0 0 5px 5px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.6), inset 0 -6px 0 rgba(0, 0, 0, 0.5);
+}
+.key .key-label { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #6b6f80; pointer-events: none; }
+.key.black .key-label { color: #8d92a6; bottom: 6px; font-size: 10px; }
+.key.is-scale.white { background: linear-gradient(180deg, #8df3e6 0%, var(--teal) 100%); }
+.key.is-scale.black { background: linear-gradient(180deg, #27b3a1 0%, #157a6e 100%); }
+.key.is-scale .key-label { color: #04302a; }
+.key.is-chord.white { background: linear-gradient(180deg, #ffd0a8 0%, #ffa14f 100%); }
+.key.is-chord.black { background: linear-gradient(180deg, #d9761f 0%, #8d4408 100%); }
+.key.is-chord .key-label { color: #4a2000; }
+.key.is-root.white { background: linear-gradient(180deg, var(--accent-2) 0%, var(--accent) 100%); }
+.key.is-root.black { background: linear-gradient(180deg, var(--accent) 0%, #a34400 100%); }
+.key.is-root .key-label { color: #2b1100; }
+.key.is-playing { transform: translateY(2px); filter: brightness(1.15); }
+.key:active { transform: translateY(2px); }
+
+/* ---------- Fretboard ---------- */
+.fretboard { width: 100%; height: auto; display: block; }
+.fb-board { fill: url(#wood); }
+.fb-nut { fill: #e8e2d4; }
+.fb-fret { stroke: #9a9fb3; stroke-width: 2; }
+.fb-string { stroke: #d9d9e3; stroke-width: 1.4; opacity: 0.85; }
+.fb-inlay { fill: rgba(255, 255, 255, 0.12); }
+.fb-dot { fill: var(--teal); stroke: #042; stroke-width: 1.5; }
+.fb-dot.root { fill: var(--accent); stroke: #3a1500; }
+.fb-dot-label { fill: #04302a; font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.fb-dot.root + .fb-dot-label { fill: #2b1100; }
+.fb-muted { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; text-anchor: middle; }
+.fb-label { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; text-anchor: middle; }
+.fb-barre { fill: rgba(255, 122, 26, 0.35); stroke: var(--accent); stroke-width: 1; }
+
+/* ---------- Sequencer ---------- */
+.seq { display: grid; gap: 8px; }
+.seq-row { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: center; }
+.seq-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.seq-label button { border: 0; background: transparent; color: inherit; padding: 0; display: flex; align-items: center; gap: 8px; }
+.seq-label.is-muted { opacity: 0.4; text-decoration: line-through; }
+.track-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.seq-cells { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 4px; }
+.cell {
+  aspect-ratio: 1 / 1.15; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--bg-2); padding: 0; min-width: 0;
+  transition: background 0.08s, transform 0.08s, box-shadow 0.08s;
+}
+.cell.is-beat { border-color: var(--line-strong); background: var(--bg-3); }
+.cell:hover { border-color: var(--accent); }
+.cell.is-on { background: var(--track); border-color: transparent; box-shadow: 0 0 12px -2px var(--track); }
+.cell.is-head { transform: scale(1.08); border-color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25); }
+.cell.is-head.is-on { filter: brightness(1.3); }
+.seq-ruler { display: grid; grid-template-columns: 84px 1fr; gap: 10px; }
+.seq-ruler div { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 4px; }
+.seq-ruler span { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-align: center; }
+.seq-ruler span.beat { color: var(--text-2); font-weight: 600; }
+@media (max-width: 640px) {
+  .seq-row { grid-template-columns: 1fr; gap: 6px; }
+  .seq-ruler { display: none; }
+}
+
+.bpm-display { font-family: var(--font-display); font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.bpm-display small { font-family: var(--font); font-size: 12px; color: var(--muted); font-weight: 600; margin-left: 6px; letter-spacing: 0.1em; }
+
+/* ---------- Drawer ---------- */
+.drawer-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px); animation: fade 0.2s; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.drawer {
+  position: fixed; z-index: 61; top: 0; right: 0; bottom: 0; width: min(460px, 100%);
+  background: var(--bg-2); border-left: 1px solid var(--line);
+  padding: 22px; overflow-y: auto; display: grid; gap: 18px; align-content: start;
+  animation: slideIn 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+  box-shadow: -30px 0 60px rgba(0, 0, 0, 0.5);
+}
+@keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.drawer-head { display: flex; align-items: center; gap: 10px; }
+.drawer-head h2 { font-size: 20px; }
+.status-line { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.status-line .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status-line.ok .dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.status-line.err .dot { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+.provider-list { display: grid; gap: 8px; }
+.provider-opt {
+  display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; text-align: left;
+  border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 12px; color: var(--text);
+  transition: all 0.15s;
+}
+.provider-opt:hover { border-color: var(--line-strong); }
+.provider-opt.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.provider-opt .radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--muted); }
+.provider-opt.is-on .radio { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 45%, transparent 50%); }
+.provider-opt small { display: block; color: var(--muted); font-size: 12px; }
+.tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 7px; border-radius: 6px; background: var(--teal-soft); color: var(--teal); }
+.tag.cloud { background: var(--violet-soft); color: var(--violet); }
+.tag.demo { background: rgba(255, 209, 102, 0.14); color: var(--warn); }
+
+/* ---------- Toasts ---------- */
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 80; display: grid; gap: 8px; max-width: min(380px, calc(100vw - 32px)); }
+.toast {
+  background: var(--bg-3); border: 1px solid var(--line-strong); border-radius: 12px; padding: 11px 14px;
+  display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; box-shadow: var(--shadow);
+  animation: rise 0.25s;
+}
+.toast svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.toast.ok { border-color: rgba(61, 220, 151, 0.45); }
+.toast.ok svg { color: var(--ok); }
+.toast.err { border-color: rgba(255, 92, 122, 0.5); }
+.toast.err svg { color: var(--danger); }
+.toast.info svg { color: var(--teal); }
+@media (max-width: 899px) { .toasts { bottom: 90px; } }
+
+/* ---------- History ---------- */
+.hist-item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+.hist-item .title { font-weight: 600; }
+.hist-item .sub { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- Scale lab extras ---------- */
+.note-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+.note-tile {
+  border: 1px solid var(--line); background: var(--bg-2); border-radius: 10px; padding: 8px 4px;
+  display: grid; gap: 2px; justify-items: center; font-family: var(--font-mono); font-weight: 700;
+  transition: all 0.12s;
+}
+.note-tile small { font-family: var(--font); font-weight: 500; font-size: 10.5px; color: var(--muted); }
+.note-tile:hover { border-color: var(--teal); }
+.note-tile.is-root { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-2); }
+.note-tile.is-root small { color: var(--accent-2); }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+footer.foot { margin-top: 34px; color: var(--muted); font-size: 12px; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <noscript>MusikSparring kræver JavaScript.</noscript>
+
+  <!-- Vendored UI runtime (no CDN, no build step) -->
+  <script>/* vendor/preact.umd.js */
+!function(n){"function"==typeof define&&define.amd?define(n):n()}(function(){var n,t,e,i,r,o,f,u,c,a,s,h,l,p,y,d,v,_="http://www.w3.org/2000/svg",w="http://www.w3.org/1999/xhtml",m=null,g=void 0,b={},k=[],x=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i,C=Array.isArray;function M(n,t){for(var e in t)n[e]=t[e];return n}function S(n){n&&n.parentNode&&n.parentNode.removeChild(n)}function $(t,e,i){var r,o,f,u={};for(f in e)"key"==f?r=e[f]:"ref"==f?o=e[f]:u[f]=e[f];if(arguments.length>2&&(u.children=arguments.length>3?n.call(arguments,2):i),"function"==typeof t&&t.defaultProps!=m)for(f in t.defaultProps)u[f]===g&&(u[f]=t.defaultProps[f]);return A(t,u,r,o,m)}function A(n,i,r,o,f){var u={type:n,props:i,key:r,ref:o,__k:m,__:m,__b:0,__e:m,__c:m,constructor:g,__v:f==m?++e:f,__i:-1,__u:0};return f==m&&t.vnode!=m&&t.vnode(u),u}function I(n){return n.children}function P(n,t){this.props=n,this.context=t}function E(n,t){if(t==m)return n.__?E(n.__,n.__i+1):m;for(var e;t<n.__k.length;t++)if((e=n.__k[t])!=m&&e.__e!=m)return e.__e;return"function"==typeof n.type?E(n):m}function F(n){if(n.__P&&n.__d){var e=n.__v,i=e.__e,r=[],o=[],f=M({},e);f.__v=e.__v+1,t.vnode&&t.vnode(f),B(n.__P,f,e,n.__n,n.__P.namespaceURI,32&e.__u?[i]:m,r,i==m?E(e):i,!!(32&e.__u),o),f.__v=e.__v,f.__.__k[f.__i]=f,G(r,f,o),e.__e=e.__=null,f.__e!=i&&H(f)}}function H(n){if((n=n.__)!=m&&n.__c!=m)return n.__e=n.__c.base=m,n.__k.some(function(t){if(t!=m&&t.__e!=m)return n.__e=n.__c.base=t.__e}),H(n)}function L(n){(!n.__d&&(n.__d=!0)&&r.push(n)&&!T.__r++||o!=t.debounceRendering)&&((o=t.debounceRendering)||f)(T)}function T(){try{for(var n,t=1;r.length;)r.length>t&&r.sort(u),n=r.shift(),t=r.length,F(n)}finally{r.length=T.__r=0}}function j(n,t,e,i,r,o,f,u,c,a,s){var h,l,p,y,d,v,_=i&&i.__k||k,w=t.length;for(c=O(e,t,_,c,w),h=0;h<w;h++)(p=e.__k[h])!=m&&(l=-1!=p.__i&&_[p.__i]||b,p.__i=h,v=B(n,p,l,r,o,f,u,c,a,s),y=p.__e,p.ref&&l.ref!=p.ref&&(l.ref&&Q(l.ref,m,p),s.push(p.ref,p.__c||y,p)),d==m&&y!=m&&(d=y),4&p.__u?(c=V(p,c,n),l.__e&&(l.__e=m)):"function"==typeof p.type&&v!==g?c=v:y&&(c=y.nextSibling),p.__u&=-7);return e.__e=d,c}function O(n,t,e,i,r){var o,f,u,c,a,s=e.length,h=s,l=0;for(n.__k=new Array(r),o=0;o<r;o++)(f=t[o])!=m&&"boolean"!=typeof f&&"function"!=typeof f?("string"==typeof f||"number"==typeof f||"bigint"==typeof f||f.constructor==String?f=n.__k[o]=A(m,f,m,m,m):C(f)?f=n.__k[o]=A(I,{children:f},m,m,m):f.constructor===g&&f.__b>0?f=n.__k[o]=A(f.type,f.props,f.key,f.ref?f.ref:m,f.__v):n.__k[o]=f,c=o+l,f.__=n,f.__b=n.__b+1,a=f.__i=z(f,e,c,h),u=m,-1!=a&&(h--,(u=e[a])&&(u.__u|=2)),u==m||u.__v==m?(-1==a&&(r>s?l--:r<s&&l++),"function"!=typeof f.type&&(f.__u|=4)):a!=c&&(a==c-1?l--:a==c+1?l++:(a>c?l--:l++,f.__u|=4))):n.__k[o]=m;if(h)for(o=0;o<s;o++)(u=e[o])!=m&&0==(2&u.__u)&&(u.__e==i&&(i=E(u)),U(u,u));return i}function V(n,t,e){var i,r;if("function"==typeof n.type){for(i=n.__k,r=0;i&&r<i.length;r++)i[r]&&(i[r].__=n,t=V(i[r],t,e));return t}n.__e!=t&&(t&&n.type&&!t.parentNode&&(t=E(n)),t=e.insertBefore(n.__e,t||m));do{t=t&&t.nextSibling}while(t!=m&&8==t.nodeType);return t}function z(n,t,e,i){var r,o,f,u=n.key,c=n.type,a=t[e],s=a!=m&&0==(2&a.__u);if(a===m&&null==u||s&&u==a.key&&c==a.type)return e;if(i>(s?1:0))for(r=e-1,o=e+1;r>=0||o<t.length;)if((a=t[f=r>=0?r--:o++])!=m&&0==(2&a.__u)&&u==a.key&&c==a.type)return f;return-1}function N(n,t,e){"-"==t[0]?n.setProperty(t,e==m?"":e):n[t]=e==m?"":"number"!=typeof e||x.test(t)?e:e+"px"}function R(n,t,e,i,r){var o,f;n:if("style"==t)if("string"==typeof e)n.style.cssText=e;else{if("string"==typeof i&&(n.style.cssText=i=""),i)for(t in i)e&&t in e||N(n.style,t,"");if(e)for(t in e)i&&e[t]==i[t]||N(n.style,t,e[t])}else if("o"==t[0]&&"n"==t[1])o=t!=(t=t.replace(h,"$1")),f=t.toLowerCase(),t=f in n||"onFocusOut"==t||"onFocusIn"==t?f.slice(2):t.slice(2),n.l||(n.l={}),n.l[t+o]=e,e?i?e[s]=i[s]:(e[s]=l,n.addEventListener(t,o?y:p,o)):n.removeEventListener(t,o?y:p,o);else{if(r==_)t=t.replace(/xlink(H|:h)/,"h").replace(/sName$/,"s");else if("width"!=t&&"height"!=t&&"href"!=t&&"list"!=t&&"form"!=t&&"tabIndex"!=t&&"download"!=t&&"rowSpan"!=t&&"colSpan"!=t&&"role"!=t&&"popover"!=t&&t in n)try{n[t]=e==m?"":e;break n}catch(n){}"function"==typeof e||(e==m||!1===e&&"-"!=t[4]?n.removeAttribute(t):n.setAttribute(t,"popover"==t&&1==e?"":e))}}function q(n){return function(e){if(this.l){var i=this.l[e.type+n];if(e[a]==m)e[a]=l++;else if(e[a]<i[s])return;return i(t.event?t.event(e):e)}}}function B(n,e,i,r,o,f,u,c,a,s){var h,l,p,y,d,v,_,w,b,x,$,A,F,H,L,T,O=e.type;if(e.constructor!==g)return m;128&i.__u&&(a=!!(32&i.__u),f=[c=e.__e=i.__e]),(h=t.__b)&&h(e);n:if("function"==typeof O){l=u.length;try{if(b=e.props,x=O.prototype&&O.prototype.render,$=(h=O.contextType)&&r[h.__c],A=h?$?$.props.value:h.__:r,i.__c?w=(p=e.__c=i.__c).__=p.__E:(x?e.__c=p=new O(b,A):(e.__c=p=new P(b,A),p.constructor=O,p.render=W),$&&$.sub(p),p.state||(p.state={}),p.__n=r,y=p.__d=!0,p.__h=[],p._sb=[]),x&&p.__s==m&&(p.__s=p.state),x&&O.getDerivedStateFromProps!=m&&(p.__s==p.state&&(p.__s=M({},p.__s)),M(p.__s,O.getDerivedStateFromProps(b,p.__s))),d=p.props,v=p.state,p.__v=e,y)x&&O.getDerivedStateFromProps==m&&p.componentWillMount!=m&&p.componentWillMount(),x&&p.componentDidMount!=m&&p.__h.push(p.componentDidMount);else{if(x&&O.getDerivedStateFromProps==m&&b!==d&&p.componentWillReceiveProps!=m&&p.componentWillReceiveProps(b,A),e.__v==i.__v||!p.__e&&p.shouldComponentUpdate!=m&&!1===p.shouldComponentUpdate(b,p.__s,A)){e.__v!=i.__v&&(p.props=b,p.state=p.__s,p.__d=!1),e.__e=i.__e,e.__k=i.__k,e.__k.some(function(n){n&&(n.__=e)}),k.push.apply(p.__h,p._sb),p._sb=[],p.__h.length&&u.push(p),c=E(i);break n}p.componentWillUpdate!=m&&p.componentWillUpdate(b,p.__s,A),x&&p.componentDidUpdate!=m&&p.__h.push(function(){p.componentDidUpdate(d,v,_)})}if(p.context=A,p.props=b,p.__P=n,p.__e=!1,F=t.__r,H=0,x)p.state=p.__s,p.__d=!1,F&&F(e),h=p.render(p.props,p.state,p.context),k.push.apply(p.__h,p._sb),p._sb=[];else do{p.__d=!1,F&&F(e),h=p.render(p.props,p.state,p.context),p.state=p.__s}while(p.__d&&++H<25);p.state=p.__s,p.getChildContext!=m&&(r=M(M({},r),p.getChildContext())),x&&!y&&p.getSnapshotBeforeUpdate!=m&&(_=p.getSnapshotBeforeUpdate(d,v)),L=h!=m&&h.type===I&&h.key==m?J(h.props.children):h,c=j(n,C(L)?L:[L],e,i,r,o,f,u,c,a,s),p.base=e.__e,e.__u&=-161,p.__h.length&&u.push(p),w&&(p.__E=p.__=m)}catch(n){if(u.length=l,e.__v=m,a||f!=m){if(n.then){for(e.__u|=a?160:128;c&&8==c.nodeType&&c.nextSibling;)c=c.nextSibling;f!=m&&(f[f.indexOf(c)]=m),e.__e=c}else if(f!=m)for(T=f.length;T--;)S(f[T])}else e.__e=i.__e;e.__k==m&&(e.__k=i.__k||[]),n.then||D(e),t.__e(n,e,i)}}else f==m&&e.__v==i.__v?(e.__k=i.__k,e.__e=i.__e):c=e.__e=K(i.__e,e,i,r,o,f,u,a,s);return(h=t.diffed)&&h(e),128&e.__u?void 0:c}function D(n){n&&(n.__c&&(n.__c.__e=!0),n.__k&&n.__k.some(D))}function G(n,e,i){for(var r=0;r<i.length;r++)Q(i[r],i[++r],i[++r]);t.__c&&t.__c(e,n),n.some(function(e){try{n=e.__h,e.__h=[],n.some(function(n){n.call(e)})}catch(n){t.__e(n,e.__v)}})}function J(n){return"object"!=typeof n||n==m||n.__b>0?n:C(n)?n.map(J):n.constructor!==g?null:M({},n)}function K(e,i,r,o,f,u,c,a,s){var h,l,p,y,d,v,k,x=r.props||b,M=i.props,$=i.type;if("svg"==$?f=_:"math"==$?f="http://www.w3.org/1998/Math/MathML":f||(f=w),u!=m)for(h=0;h<u.length;h++)if((d=u[h])&&"setAttribute"in d==!!$&&($?d.localName==$:3==d.nodeType)){e=d,u[h]=m;break}if(e==m){if($==m)return document.createTextNode(M);e=document.createElementNS(f,$,M.is&&M),a&&(t.__m&&t.__m(i,u),a=!1),u=m}if($==m)x===M||a&&e.data==M||(e.data=M);else{if(u="textarea"==$&&M.defaultValue!=m?m:u&&n.call(e.childNodes),!a&&u!=m)for(x={},h=0;h<e.attributes.length;h++)x[(d=e.attributes[h]).name]=d.value;for(h in x)d=x[h],"dangerouslySetInnerHTML"==h?p=d:"children"==h||h in M||"value"==h&&"defaultValue"in M||"checked"==h&&"defaultChecked"in M||R(e,h,m,d,f);for(h in M)d=M[h],"children"==h?y=d:"dangerouslySetInnerHTML"==h?l=d:"value"==h?v=d:"checked"==h?k=d:a&&"function"!=typeof d||x[h]===d||R(e,h,d,x[h],f);if(l)a||p&&(l.__html==p.__html||l.__html==e.innerHTML)||(e.innerHTML=l.__html),i.__k=[];else if(p&&(e.innerHTML=""),j("template"==i.type?e.content:e,C(y)?y:[y],i,r,o,"foreignObject"==$?w:f,u,c,u?u[0]:r.__k&&E(r,0),a,s),u!=m)for(h=u.length;h--;)S(u[h]);a&&"textarea"!=$||(h="value","progress"==$&&v==m?e.removeAttribute("value"):v!=g&&(v!==e[h]||"progress"==$&&!v||"option"==$&&v!=x[h])&&R(e,h,v,x[h],f),h="checked",k!=g&&k!=e[h]&&R(e,h,k,x[h],f))}return e}function Q(n,e,i){try{if("function"==typeof n){var r="function"==typeof n.__u;r&&n.__u(),r&&e==m||(n.__u=n(e))}else n.current=e}catch(n){t.__e(n,i)}}function U(n,e,i){var r,o;if(t.unmount&&t.unmount(n),(r=n.ref)&&(r.current&&r.current!=n.__e||Q(r,m,e)),(r=n.__c)!=m){if(r.componentWillUnmount)try{r.componentWillUnmount()}catch(n){t.__e(n,e)}r.base=r.__P=r.__n=m}if(r=n.__k)for(o=0;o<r.length;o++)r[o]&&U(r[o],e,i||"function"!=typeof n.type);i||S(n.__e),n.__c=n.__=n.__e=g}function W(n,t,e){return this.constructor(n,e)}function X(e,i,r){var o,f,u,c;i==document&&(i=document.documentElement),t.__&&t.__(e,i),f=(o="function"==typeof r)?m:r&&r.__k||i.__k,u=[],c=[],B(i,e=(!o&&r||i).__k=$(I,m,[e]),f||b,b,i.namespaceURI,!o&&r?[r]:f?m:i.firstChild?n.call(i.childNodes):m,u,!o&&r?r:f?f.__e:i.firstChild,o,c),G(u,e,c),e.props.children=m}n=k.slice,t={__e:function(n,t,e,i){for(var r,o,f;t=t.__;)if((r=t.__c)&&!r.__)try{if((o=r.constructor)&&o.getDerivedStateFromError!=m&&(r.setState(o.getDerivedStateFromError(n)),f=r.__d),r.componentDidCatch!=m&&(r.componentDidCatch(n,i||{}),f=r.__d),f)return r.__E=r}catch(t){n=t}throw n}},e=0,i=function(n){return n!=m&&n.constructor===g},P.prototype.setState=function(n,t){var e;e=this.__s!=m&&this.__s!=this.state?this.__s:this.__s=M({},this.state),"function"==typeof n&&(n=n(M({},e),this.props)),n&&M(e,n),n!=m&&this.__v&&(t&&this._sb.push(t),L(this))},P.prototype.forceUpdate=function(n){this.__v&&(this.__e=!0,n&&this.__h.push(n),L(this))},P.prototype.render=I,r=[],f="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,u=function(n,t){return n.__v.__b-t.__v.__b},T.__r=0,c=Math.random().toString(8),a="__d"+c,s="__a"+c,h=/(PointerCapture)$|Capture$/i,l=0,p=q(!1),y=q(!0),d=0,v={__proto__:null,render:X,hydrate:function n(t,e){X(t,e,n)},createElement:$,h:$,Fragment:I,createRef:function(){return{current:m}},isValidElement:i,Component:P,cloneElement:function(t,e,i){var r,o,f,u,c=M({},t.props);for(f in t.type&&t.type.defaultProps&&(u=t.type.defaultProps),e)"key"==f?r=e[f]:"ref"==f?o=e[f]:c[f]=e[f]===g&&u!=g?u[f]:e[f];return arguments.length>2&&(c.children=arguments.length>3?n.call(arguments,2):i),A(t.type,c,r||t.key,o||t.ref,m)},createContext:function(n){function t(n){var e,i;return this.getChildContext||(e=new Set,(i={})[t.__c]=this,this.getChildContext=function(){return i},this.componentWillUnmount=function(){e=m},this.shouldComponentUpdate=function(n){this.props.value!=n.value&&e.forEach(function(n){n.__e=!0,L(n)})},this.sub=function(n){e.add(n);var t=n.componentWillUnmount;n.componentWillUnmount=function(){e&&e.delete(n),t&&t.call(n)}}),n.children}return t.__c="__cC"+d++,t.__=n,t.Provider=t.__l=(t.Consumer=function(n,t){return n.children(t)}).contextType=t,t},toChildArray:function n(t,e){return e=e||[],t==m||"boolean"==typeof t||(C(t)?t.some(function(t){n(t,e)}):e.push(t)),e},options:t},typeof module<"u"?module.exports=v:self.preact=v});
+//# sourceMappingURL=preact.min.umd.js.map
+
+</script>
+  <script>/* vendor/preact-hooks.umd.js */
+!function(n,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports,require("preact")):"function"==typeof define&&define.amd?define(["exports","preact"],t):t((n||self).preactHooks={},n.preact)}(this,function(n,t){var u,i,r,o,f=0,c=[],e=t.options,a=e.__b,v=e.__r,l=e.diffed,d=e.__c,p=e.unmount,s=e.__;function y(n,t){e.__h&&e.__h(i,n,f||t),f=0;var u=i.__H||(i.__H={__:[],__h:[]});return n>=u.__.length&&u.__.push({}),u.__[n]}function h(n){return f=1,m(j,n)}function m(n,t,r){var o=y(u++,2);if(o.t=n,!o.__c&&(o.__=[r?r(t):j(void 0,t),function(n){var t=o.__N?o.__N[0]:o.__[0],u=o.t(t,n);t!==u&&(o.__N=[u,o.__[1]],o.__c.setState({}))}],o.__c=i,!i.__f)){var f=function(n,t,u){if(!o.__c.__H)return!0;var i=!1,r=o.__c.props!==n;if(o.__c.__H.__.some(function(n){if(n.__N){i=!0;var t=n.__[0];n.__=n.__N,n.__N=void 0,t!==n.__[0]&&(r=!0)}}),c){var f=c.call(this,n,t,u);return i?f||r:f}return!i||r};i.__f=!0;var c=i.shouldComponentUpdate,e=i.componentWillUpdate;i.componentWillUpdate=function(n,t,u){if(this.__e){var i=c;c=void 0,f(n,t,u),c=i}e&&e.call(this,n,t,u)},i.shouldComponentUpdate=f}return o.__N||o.__}function T(n,t){var r=y(u++,4);!e.__s&&g(r.__H,t)&&(r.__=n,r.u=t,i.__h.push(r))}function _(n,t){var i=y(u++,7);return g(i.__H,t)&&(i.__=n(),i.__H=t,i.__h=n),i.__}function b(){for(var n;n=c.shift();){var t=n.__H;if(n.__P&&t)try{t.__h.some(A),t.__h.some(F),t.__h=[]}catch(u){t.__h=[],e.__e(u,n.__v)}}}e.__b=function(n){i=null,a&&a(n)},e.__=function(n,t){n&&t.__k&&t.__k.__m&&(n.__m=t.__k.__m),s&&s(n,t)},e.__r=function(n){v&&v(n),u=0;var t=(i=n.__c).__H;t&&(r===i?(t.__h=[],i.__h=[],t.__.some(function(n){n.__N&&(n.__=n.__N),n.u=n.__N=void 0})):(t.__h.some(A),t.__h.some(F),t.__h=[],u=0)),r=i},e.diffed=function(n){l&&l(n);var t=n.__c;t&&t.__H&&(t.__H.__h.length&&(1!==c.push(t)&&o===e.requestAnimationFrame||((o=e.requestAnimationFrame)||x)(b)),t.__H.__.some(function(n){n.u&&(n.__H=n.u,n.u=void 0)})),r=i=null},e.__c=function(n,t){t.some(function(n){try{n.__h.some(A),n.__h=n.__h.filter(function(n){return!n.__||F(n)})}catch(u){t.some(function(n){n.__h&&(n.__h=[])}),t=[],e.__e(u,n.__v)}}),d&&d(n,t)},e.unmount=function(n){p&&p(n);var t,u=n.__c;u&&u.__H&&(u.__H.__.some(function(n){try{A(n)}catch(n){t=n}}),u.__H=void 0,t&&e.__e(t,u.__v))};var q="function"==typeof requestAnimationFrame;function x(n){var t,u=function(){clearTimeout(i),q&&cancelAnimationFrame(t),setTimeout(n)},i=setTimeout(u,35);q&&(t=requestAnimationFrame(u))}function A(n){var t=i,u=n.__c;"function"==typeof u&&(n.__c=void 0,u()),i=t}function F(n){var t=i;n.__c=n.__(),i=t}function g(n,t){return!n||n.length!==t.length||t.some(function(t,u){return t!==n[u]})}function j(n,t){return"function"==typeof t?t(n):t}n.useCallback=function(n,t){return f=8,_(function(){return n},t)},n.useContext=function(n){var t=i.context[n.__c],r=y(u++,9);return r.c=n,t?(null==r.__&&(r.__=!0,t.sub(i)),t.props.value):n.__},n.useDebugValue=function(n,t){e.useDebugValue&&e.useDebugValue(t?t(n):n)},n.useEffect=function(n,t){var r=y(u++,3);!e.__s&&g(r.__H,t)&&(r.__=n,r.u=t,i.__H.__h.push(r))},n.useErrorBoundary=function(n){var t=y(u++,10),r=h();return t.__=n,i.componentDidCatch||(i.componentDidCatch=function(n,u){t.__&&t.__(n,u),r[1](n)}),[r[0],function(){r[1](void 0)}]},n.useId=function(){var n=y(u++,11);if(!n.__){for(var t=i.__v;null!==t&&!t.__m&&null!==t.__;)t=t.__;var r=t.__m||(t.__m=[0,0]);n.__="P"+r[0]+"-"+r[1]++}return n.__},n.useImperativeHandle=function(n,t,u){f=6,T(function(){if("function"==typeof n){var u=n(t());return function(){n(null),u&&"function"==typeof u&&u()}}if(n)return n.current=t(),function(){return n.current=null}},null==u?u:u.concat(n))},n.useLayoutEffect=T,n.useMemo=_,n.useReducer=m,n.useRef=function(n){return f=5,_(function(){return{current:n}},[])},n.useState=h});
+//# sourceMappingURL=hooks.umd.js.map
+
+</script>
+  <script>/* vendor/htm.umd.js */
+!function(n,e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define(e):n.htm=e()}(this,function(){var n=function(e,t,u,s){var r;t[0]=0;for(var p=1;p<t.length;p++){var h=t[p++],o=t[p]?(t[0]|=h?1:2,u[t[p++]]):t[++p];3===h?s[0]=o:4===h?s[1]=Object.assign(s[1]||{},o):5===h?(s[1]=s[1]||{})[t[++p]]=o:6===h?s[1][t[++p]]+=o+"":h?(r=e.apply(o,n(e,o,u,["",null])),s.push(r),o[0]?t[0]|=2:(t[p-2]=0,t[p]=r)):s.push(o)}return s},e=new Map;return function(t){var u=e.get(this);return u||(u=new Map,e.set(this,u)),(u=n(this,u.get(t)||(u.set(t,u=function(n){for(var e,t,u=1,s="",r="",p=[0],h=function(n){1===u&&(n||(s=s.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?p.push(0,n,s):3===u&&(n||s)?(p.push(3,n,s),u=2):2===u&&"..."===s&&n?p.push(4,n,0):2===u&&s&&!n?p.push(5,0,!0,s):u>=5&&((s||!n&&5===u)&&(p.push(u,0,s,t),u=6),n&&(p.push(u,n,0,t),u=6)),s=""},o=0;o<n.length;o++){o&&(1===u&&h(),h(o));for(var f=0;f<n[o].length;f++)e=n[o][f],1===u?"<"===e?(h(),p=[p],u=3):s+=e:4===u?"--"===s&&">"===e?(u=1,s=""):s=e+s[0]:r?e===r?r="":s+=e:'"'===e||"'"===e?r=e:">"===e?(h(),u=1):u&&("="===e?(u=5,t=s,s=""):"/"===e&&(u<5||">"===n[o][f+1])?(h(),3===u&&(p=p[0]),u=p,(p=p[0]).push(2,0,u),u=0):" "===e||"\t"===e||"\n"===e||"\r"===e?(h(),u=2):s+=e),3===u&&"!--"===s&&(u=4,p=p[0])}return h(),p}(t)),u),arguments,[])).length>1?u:u[0]}});
+
+</script>
+
+  <!-- MusikSparring modules -->
+  <script>/* sdk/musiksparring-ai.js */
+/*!
+ * MusikSparring AI SDK v3.0.0 — local-first LLM client for musicians.
+ * Zero dependencies. Works in browsers (classic <script>) and Node 18+ (require).
+ *
+ * Providers: demo (offline), ollama, lmstudio, openai_compatible (llama.cpp / vLLM / Jan),
+ *            anthropic, openai.
+ *
+ * External side effects: every provider except `demo` performs HTTP requests via fetch().
+ * Nothing is persisted by this module; storage is the caller's responsibility.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.MusikAI = factory();
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const VERSION = '3.0.0';
+
+  // ---------------------------------------------------------------------------
+  // Errors
+  // ---------------------------------------------------------------------------
+
+  class MusikAIError extends Error {
+    /**
+     * @param {string} message
+     * @param {{code?: string, status?: number, provider?: string, retryable?: boolean, cause?: unknown}} [info]
+     */
+    constructor(message, info = {}) {
+      super(message);
+      this.name = 'MusikAIError';
+      this.code = info.code || 'unknown';
+      this.status = info.status || 0;
+      this.provider = info.provider || '';
+      this.retryable = Boolean(info.retryable);
+      if (info.cause !== undefined) this.cause = info.cause;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Provider registry
+  // ---------------------------------------------------------------------------
+
+  const PROVIDERS = Object.freeze({
+    demo: Object.freeze({
+      id: 'demo',
+      label: 'Demo (offline)',
+      local: true,
+      needsKey: false,
+      baseUrl: '',
+      defaultModel: 'demo',
+      hint: 'Ingen netværk. Deterministiske forslag ud fra toneart og genre.',
+    }),
+    ollama: Object.freeze({
+      id: 'ollama',
+      label: 'Ollama (lokal)',
+      local: true,
+      needsKey: false,
+      baseUrl: 'http://localhost:11434',
+      defaultModel: 'llama3.1',
+      hint: 'Start med OLLAMA_ORIGINS="*" ollama serve for at tillade browser-kald.',
+    }),
+    lmstudio: Object.freeze({
+      id: 'lmstudio',
+      label: 'LM Studio (lokal)',
+      local: true,
+      needsKey: false,
+      baseUrl: 'http://localhost:1234/v1',
+      defaultModel: '',
+      hint: 'Aktivér "Enable CORS" under Developer → Server Settings i LM Studio.',
+    }),
+    openai_compatible: Object.freeze({
+      id: 'openai_compatible',
+      label: 'OpenAI-kompatibel server (llama.cpp / vLLM / Jan)',
+      local: true,
+      needsKey: false,
+      baseUrl: 'http://localhost:8080/v1',
+      defaultModel: '',
+      hint: 'Enhver server med /v1/chat/completions. API-nøgle er valgfri.',
+    }),
+    anthropic: Object.freeze({
+      id: 'anthropic',
+      label: 'Anthropic Claude',
+      local: false,
+      needsKey: true,
+      keyPrefix: 'sk-ant-',
+      baseUrl: 'https://api.anthropic.com',
+      defaultModel: 'claude-opus-5-5',
+      hint: 'Nøglen sendes direkte fra browseren. Brug kun på din egen maskine.',
+    }),
+    openai: Object.freeze({
+      id: 'openai',
+      label: 'OpenAI',
+      local: false,
+      needsKey: true,
+      keyPrefix: 'sk-',
+      baseUrl: 'https://api.openai.com/v1',
+      defaultModel: 'gpt-4o',
+      hint: 'Nøglen sendes direkte fra browseren. Brug kun på din egen maskine.',
+    }),
+  });
+
+  const ANTHROPIC_VERSION = '2023-06-01';
+
+  // ---------------------------------------------------------------------------
+  // Suggestion schema (shared by every provider that supports structured output)
+  // ---------------------------------------------------------------------------
+
+  const strArr = (desc) => ({ type: 'array', items: { type: 'string' }, description: desc });
+
+  const SUGGESTION_SCHEMA = Object.freeze({
+    type: 'object',
+    additionalProperties: false,
+    required: [
+      'summary', 'questions', 'directions', 'chords', 'melodies',
+      'rhythm', 'arrangement', 'production', 'lyrics', 'actions',
+    ],
+    properties: {
+      summary: { type: 'string', description: '1-2 sætninger: den overordnede kreative retning' },
+      questions: strArr('2-4 korte afklarende spørgsmål'),
+      directions: strArr('3-5 kreative retninger'),
+      chords: {
+        type: 'array',
+        description: '3-5 akkordprogressioner der passer til toneart og genre',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['label', 'chords', 'note'],
+          properties: {
+            label: { type: 'string', description: 'Kort navn, fx "Vers" eller "I–V–vi–IV"' },
+            chords: { type: 'array', items: { type: 'string' }, description: 'Akkordsymboler, fx ["Am","F","C","G"]' },
+            note: { type: 'string', description: 'Hvorfor den virker / hvordan den bruges' },
+          },
+        },
+      },
+      melodies: strArr('3-4 melodiske ideer eller motiver'),
+      rhythm: strArr('3-4 rytmiske patterns eller groove-ideer'),
+      arrangement: strArr('3-4 arrangement-forslag'),
+      production: strArr('3-4 produktion/mix tips'),
+      lyrics: strArr('3-4 tekstlige temaer eller vinkler'),
+      actions: strArr('3-5 konkrete next steps'),
+    },
+  });
+
+  const SECTION_KEYS = Object.freeze([
+    'questions', 'directions', 'melodies', 'rhythm', 'arrangement', 'production', 'lyrics', 'actions',
+  ]);
+
+  // ---------------------------------------------------------------------------
+  // Mini music theory (enough for the demo provider + normalisation)
+  // ---------------------------------------------------------------------------
+
+  const NOTES = Object.freeze(['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']);
+  const FLAT_TO_SHARP = Object.freeze({
+    Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#', Cb: 'B', Fb: 'E', 'E#': 'F', 'B#': 'C',
+  });
+
+  /** @param {string} note */
+  function normalizeNote(note) {
+    if (!note) return null;
+    const m = String(note).trim().match(/^([A-Ga-g])([#b♯♭]?)/);
+    if (!m) return null;
+    const acc = m[2].replace('♯', '#').replace('♭', 'b');
+    const raw = m[1].toUpperCase() + acc;
+    return FLAT_TO_SHARP[raw] || raw;
+  }
+
+  function transpose(note, semis) {
+    const n = normalizeNote(note);
+    if (!n) return null;
+    return NOTES[(NOTES.indexOf(n) + semis + 1200) % 12];
+  }
+
+  /**
+   * Parse "C dur", "Am", "A minor", "F# mol", "Bb major", "C" → {root, mode}.
+   * @param {string} text
+   */
+  function parseKey(text) {
+    if (!text) return null;
+    const m = String(text).trim().match(/^([A-Ga-g][#b♯♭]?)\s*(.*)$/);
+    if (!m) return null;
+    const root = normalizeNote(m[1]);
+    const rest = m[2].toLowerCase().trim();
+    const minor = /^(m\b|min|minor|mol|aeolian|-)/.test(rest) || (/^m$/.test(rest));
+    return { root, mode: minor ? 'minor' : 'major' };
+  }
+
+  const MAJOR = [0, 2, 4, 5, 7, 9, 11];
+  const MINOR = [0, 2, 3, 5, 7, 8, 10];
+  const MAJOR_QUAL = ['', 'm', 'm', '', '', 'm', 'dim'];
+  const MINOR_QUAL = ['m', 'dim', '', 'm', 'm', '', ''];
+
+  /** Diatonic triads for a key. */
+  function diatonicChords(root, mode) {
+    const steps = mode === 'minor' ? MINOR : MAJOR;
+    const quals = mode === 'minor' ? MINOR_QUAL : MAJOR_QUAL;
+    return steps.map((s, i) => transpose(root, s) + quals[i]);
+  }
+
+  const CHORD_RE = /(?<![A-Za-z0-9#])([A-G])([#b♯♭]?)((?:maj7|maj9|maj13|maj|min7|min|m7b5|mMaj7|mmaj7|m7|m9|m11|m6|m|dim7|dim|aug|sus2|sus4|sus|add9|add11|7|9|11|13|6|5|°|ø|\+|Δ7|Δ|-7|-)?)(?:\/([A-G][#b♯♭]?))?(?![A-Za-z0-9#])/g;
+
+  /**
+   * Extract chord symbols from free text ("Am - F - C - G", "I love Dm7 here").
+   * @param {string} text
+   * @returns {string[]}
+   */
+  function tokenizeChords(text, opts = {}) {
+    if (!text) return [];
+    const out = [];
+    let m;
+    CHORD_RE.lastIndex = 0;
+    while ((m = CHORD_RE.exec(String(text))) !== null) {
+      const root = normalizeNote(m[1] + m[2]);
+      const bass = m[4] ? normalizeNote(m[4]) : '';
+      out.push(root + m[3] + (bass ? '/' + bass : ''));
+    }
+    if (opts.allowBare) return out;
+    // In free prose a lone single letter ("A", "E") is usually a word, not a chord.
+    const bare = out.filter((c) => /^[A-G]$/.test(c)).length;
+    if (out.length < 2 && bare === out.length) return [];
+    return out;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Prompt building (stable system prompt → cacheable prefix; params in user turn)
+  // ---------------------------------------------------------------------------
+
+  const SYSTEM_PROMPT = [
+    'Du er en erfaren musikproducer, sangskriver og kreativ coach.',
+    'Du hjælper musikere med konkrete, direkte anvendelige forslag til et musikprojekt.',
+    'Svar altid på dansk, medmindre brugeren skriver på et andet sprog.',
+    '',
+    'Regler:',
+    '- Vær specifik: nævn konkrete akkorder, intervaller, instrumenter, tempi og teknikker.',
+    '- Akkordsymboler skrives som "Am", "F#m7", "Bbmaj7", "G/B" — ét symbol pr. element i "chords"-arrays.',
+    '- Alle akkordprogressioner skal passe til den angivne toneart, hvis en er givet.',
+    '- Hold hvert punkt kort (1-2 sætninger). Ingen indledning, ingen afslutning.',
+    '- Returnér KUN gyldig JSON der matcher det givne skema. Ingen markdown, ingen kodeblokke.',
+    '',
+    'JSON-skema:',
+    JSON.stringify(SUGGESTION_SCHEMA),
+  ].join('\n');
+
+  /**
+   * @param {Record<string, string>} params
+   * @returns {{system: string, user: string}}
+   */
+  function buildCoachPrompt(params = {}) {
+    const field = (label, v) => `${label}: ${String(v || '').trim() || 'ikke angivet'}`;
+    const user = [
+      'Projektinfo:',
+      field('Genre', params.genre),
+      field('Mood/stemning', params.mood),
+      field('BPM', params.bpm),
+      field('Toneart', params.key),
+      field('Referencer', params.references),
+      field('Eksisterende materiale', params.existing),
+      field('Begrænsninger', params.constraints),
+      field('Mål', params.goals),
+      '',
+      'Generér forslag som JSON efter skemaet.',
+    ].join('\n');
+    return { system: SYSTEM_PROMPT, user };
+  }
+
+  // ---------------------------------------------------------------------------
+  // JSON helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Tolerant JSON extraction: strips code fences, finds the outermost object.
+   * @param {string} text
+   */
+  function parseJSONLoose(text) {
+    if (typeof text !== 'string') throw new MusikAIError('Svar var ikke tekst', { code: 'bad_response' });
+    let t = text.trim();
+    const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) t = fence[1].trim();
+    try {
+      return JSON.parse(t);
+    } catch {
+      /* fall through */
+    }
+    const start = t.indexOf('{');
+    const end = t.lastIndexOf('}');
+    if (start === -1 || end <= start) {
+      throw new MusikAIError('Kunne ikke finde JSON i svaret', { code: 'bad_json' });
+    }
+    try {
+      return JSON.parse(t.slice(start, end + 1));
+    } catch (e) {
+      throw new MusikAIError('Ugyldig JSON i svaret', { code: 'bad_json', cause: e });
+    }
+  }
+
+  const toStrList = (v) => {
+    if (Array.isArray(v)) return v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).map((s) => s.trim()).filter(Boolean);
+    if (typeof v === 'string' && v.trim()) return v.split(/\n+/).map((s) => s.replace(/^[-*\d.)\s]+/, '').trim()).filter(Boolean);
+    return [];
+  };
+
+  /**
+   * Normalise any model output into the canonical Suggestions shape.
+   * Accepts legacy string-based chord lists.
+   * @param {unknown} raw
+   */
+  function normalizeSuggestions(raw) {
+    const obj = raw && typeof raw === 'object' ? /** @type {Record<string, unknown>} */ (raw) : {};
+    const out = { summary: typeof obj.summary === 'string' ? obj.summary.trim() : '' };
+    for (const k of SECTION_KEYS) out[k] = toStrList(obj[k]);
+
+    const chordsRaw = Array.isArray(obj.chords) ? obj.chords : toStrList(obj.chords);
+    out.chords = chordsRaw
+      .map((item, i) => {
+        if (item && typeof item === 'object') {
+          const it = /** @type {Record<string, unknown>} */ (item);
+          const list = Array.isArray(it.chords)
+            ? it.chords.flatMap((c) => tokenizeChords(String(c), { allowBare: true }))
+            : tokenizeChords(String(it.chords || it.progression || ''));
+          return {
+            label: String(it.label || it.name || `Progression ${i + 1}`).trim(),
+            chords: list,
+            note: String(it.note || it.why || it.description || '').trim(),
+          };
+        }
+        const text = String(item);
+        const list = tokenizeChords(text);
+        const dash = text.search(/[:–—-]\s/);
+        return {
+          label: dash > 0 && dash < 40 ? text.slice(0, dash).trim() : `Progression ${i + 1}`,
+          chords: list,
+          note: text.trim(),
+        };
+      })
+      .filter((p) => p.chords.length > 0 || p.note);
+    return out;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Demo provider — deterministic, offline
+  // ---------------------------------------------------------------------------
+
+  function hashString(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function pick(list, seed, n) {
+    const out = [];
+    const copy = list.slice();
+    let s = seed;
+    while (out.length < n && copy.length) {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      out.push(copy.splice(s % copy.length, 1)[0]);
+    }
+    return out;
+  }
+
+  /**
+   * @param {Record<string, string>} params
+   */
+  function mockSuggestions(params = {}) {
+    const key = parseKey(params.key) || { root: 'C', mode: 'major' };
+    const genre = (params.genre || 'pop').trim();
+    const mood = (params.mood || 'åben').trim();
+    const bpm = String(params.bpm || '').trim() || (key.mode === 'minor' ? '92' : '120');
+    const seed = hashString([genre, mood, key.root, key.mode, bpm].join('|'));
+    const d = diatonicChords(key.root, key.mode);
+    const prog = key.mode === 'major'
+      ? [
+          { label: 'I–V–vi–IV', chords: [d[0], d[4], d[5], d[3]], note: 'Den klassiske pop-loop. Stærk til omkvæd.' },
+          { label: 'vi–IV–I–V', chords: [d[5], d[3], d[0], d[4]], note: 'Samme akkorder, mørkere start. God til vers.' },
+          { label: 'I–IV–vi–V', chords: [d[0], d[3], d[5], d[4]], note: 'Løftende bevægelse, egner sig til pre-chorus.' },
+          { label: 'ii–V–I', chords: [d[1] + '7', d[4] + '7', d[0] + 'maj7'], note: 'Jazz-farve til et break eller en bro.' },
+        ]
+      : [
+          { label: 'i–VI–III–VII', chords: [d[0], d[5], d[2], d[6]], note: 'Episk mol-loop, bærer både vers og omkvæd.' },
+          { label: 'i–iv–v', chords: [d[0], d[3], d[4]], note: 'Rå og enkel. Lad rytmen gøre arbejdet.' },
+          { label: 'i–VII–VI–VII', chords: [d[0], d[6], d[5], d[6]], note: 'Pendulerende, hypnotisk. God til builds.' },
+          { label: 'i–III–VII–iv', chords: [d[0] + '7', d[2], d[6], d[3]], note: 'Mere melankolsk med en dominant-farve på grundakkorden.' },
+        ];
+
+    const dirPool = [
+      `Byg ${genre}-nummeret op omkring ét hook-motiv der går igen i både vokal og instrumental.`,
+      `Lad ${mood}-stemningen styre lydvalget: find to signaturlyde og hold dig til dem.`,
+      'Skriv omkvædet først, så ved du hvor verset skal lande.',
+      'Prøv et halv-tempo-feel i bridge for kontrast.',
+      'Overvej at starte nummeret midt i omkvædet (cold open).',
+      `Kør en version i ${bpm} BPM og én 8 BPM lavere, og vælg den der føles mest naturlig at synge til.`,
+    ];
+    const melPool = [
+      `Start melodien på kvinten (${transpose(key.root, 7)}) og land på grundtonen i slutningen af frasen.`,
+      `Brug en gentaget rytmisk celle (fx ta-ta-taaa) på tonerne ${key.root}, ${transpose(key.root, key.mode === 'minor' ? 3 : 4)} og ${transpose(key.root, 7)}.`,
+      'Lad omkvædet ligge en terts højere end verset for et tydeligt løft.',
+      'Afslut omkvædet på en ikke-grundtone (fx sekst eller none) for at holde spændingen.',
+      'Call-and-response mellem vokal og et instrument i 2-takters fraser.',
+    ];
+    const rhythmPool = [
+      `Kick på 1 og 3, snare på 2 og 4, hi-hat i ottendedele med let swing — den sikre ${genre}-base.`,
+      'Prøv et syncoperet kick-mønster (1, 2&, 3&) under et lige hi-hat-mønster.',
+      'Halvtids-groove i verset, dobbelt tempo i omkvædet.',
+      'Læg en percussion-loop (shaker/tamburin) i sekstendedele for fremdrift.',
+      'Drop trommerne helt i sidste vers-linje før omkvædet.',
+    ];
+    const arrPool = [
+      'Intro (4) → Vers (8) → Pre (4) → Omkvæd (8) → Vers (8) → Pre (4) → Omkvæd (8) → Bridge (8) → Omkvæd x2.',
+      'Tilføj ét nyt element pr. sektion — aldrig alt på én gang.',
+      'Lad bassen spille grundtoner i verset og gå i oktaver i omkvædet.',
+      'Brug en counter-melodi i andet omkvæd for at holde lytteren.',
+    ];
+    const prodPool = [
+      'Sidechain pads mod kick for at skabe luft.',
+      'High-pass alt undtagen kick og bas ved 100-120 Hz.',
+      'Dobbelt vokalen i omkvædet og panorér 30/30.',
+      'Brug en kort plate-reverb på snare og en lang hall på vokal — kun i omkvædet.',
+      'Automatisér filter-cutoff op gennem pre-chorus.',
+    ];
+    const lyrPool = [
+      `Skriv ud fra ét konkret billede der matcher "${mood}" — et sted, et objekt, et tidspunkt.`,
+      'Lad omkvædet være én sætning der kan stå alene.',
+      'Vers = detaljer og scene, omkvæd = følelse og konklusion.',
+      'Brug en gentagelse med variation: samme linje, nyt sidste ord.',
+    ];
+    const qPool = [
+      'Er der en tekst eller en titel allerede?',
+      'Skal nummeret kunne spilles live med få musikere?',
+      `Hvor lang skal den færdige version være?`,
+      'Hvilket instrument skal bære hooket?',
+      'Er vokalen mandlig, kvindelig eller instrumental?',
+    ];
+    const actPool = [
+      `Optag en 8-takters loop i ${key.root} ${key.mode === 'minor' ? 'mol' : 'dur'} ved ${bpm} BPM med progression 1.`,
+      'Syng/spil tre forskellige hook-ideer over loopet og vælg én inden for 20 minutter.',
+      'Lav en grov struktur-skitse med markører i din DAW.',
+      'Skriv omkvædsteksten færdig før du rører ved mix.',
+      'Book en 30-minutters feedback-session med en anden musiker.',
+    ];
+
+    return normalizeSuggestions({
+      summary: `${genre} i ${key.root} ${key.mode === 'minor' ? 'mol' : 'dur'}, ${bpm} BPM, med en ${mood} grundstemning. Byg nummeret omkring ét stærkt hook og én tydelig lydpalet.`,
+      questions: pick(qPool, seed + 1, 3),
+      directions: pick(dirPool, seed + 2, 4),
+      chords: prog,
+      melodies: pick(melPool, seed + 3, 3),
+      rhythm: pick(rhythmPool, seed + 4, 3),
+      arrangement: pick(arrPool, seed + 5, 3),
+      production: pick(prodPool, seed + 6, 4),
+      lyrics: pick(lyrPool, seed + 7, 3),
+      actions: pick(actPool, seed + 8, 4),
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // HTTP core
+  // ---------------------------------------------------------------------------
+
+  const sleep = (ms, signal) =>
+    new Promise((resolve, reject) => {
+      const t = setTimeout(resolve, ms);
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          clearTimeout(t);
+          reject(abortError());
+        }, { once: true });
+      }
+    });
+
+  const abortError = () => new MusikAIError('Anmodning afbrudt', { code: 'aborted' });
+
+  function joinUrl(base, path) {
+    return String(base).replace(/\/+$/, '') + '/' + String(path).replace(/^\/+/, '');
+  }
+
+  /**
+   * fetch with timeout + external abort signal.
+   * EXTERNAL CALL: network request.
+   */
+  async function fetchWithTimeout(fetchImpl, url, init, timeoutMs, signal, provider) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const onAbort = () => ctrl.abort();
+    if (signal) {
+      if (signal.aborted) {
+        clearTimeout(timer);
+        throw abortError();
+      }
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+    try {
+      return await fetchImpl(url, { ...init, signal: ctrl.signal });
+    } catch (e) {
+      if (signal && signal.aborted) throw abortError();
+      if (ctrl.signal.aborted) {
+        throw new MusikAIError(`Timeout efter ${Math.round(timeoutMs / 1000)}s`, {
+          code: 'timeout', provider, retryable: true, cause: e,
+        });
+      }
+      throw new MusikAIError(
+        'Netværksfejl — kører serveren, og tillader den CORS fra denne side?',
+        { code: 'network', provider, retryable: true, cause: e },
+      );
+    } finally {
+      clearTimeout(timer);
+      if (signal) signal.removeEventListener('abort', onAbort);
+    }
+  }
+
+  async function readError(res) {
+    let text = '';
+    try {
+      text = await res.text();
+    } catch {
+      /* ignore */
+    }
+    try {
+      const j = JSON.parse(text);
+      return j?.error?.message || j?.error || j?.message || text;
+    } catch {
+      return text;
+    }
+  }
+
+  function retryDelay(attempt, res) {
+    const ra = res && res.headers && res.headers.get && res.headers.get('retry-after');
+    const secs = ra ? Number(ra) : NaN;
+    if (Number.isFinite(secs) && secs > 0) return Math.min(secs * 1000, 30000);
+    return Math.min(800 * 2 ** attempt + Math.random() * 300, 15000);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Provider adapters: (client, req) → { url, init, parse(json) → text }
+  // ---------------------------------------------------------------------------
+
+  function openAIStyleBody(client, req, schemaMode) {
+    const body = {
+      model: client.model,
+      messages: [
+        ...(req.system ? [{ role: 'system', content: req.system }] : []),
+        ...req.messages,
+      ],
+      temperature: req.temperature,
+    };
+    if (req.maxTokens) body.max_tokens = req.maxTokens;
+    if (req.json && schemaMode === 'json_schema' && req.schema) {
+      body.response_format = {
+        type: 'json_schema',
+        json_schema: { name: 'musiksparring', strict: true, schema: req.schema },
+      };
+    } else if (req.json && schemaMode) {
+      body.response_format = { type: 'json_object' };
+    }
+    return body;
+  }
+
+  const parseOpenAI = (data) => {
+    const msg = data?.choices?.[0]?.message;
+    if (!msg) throw new MusikAIError('Tomt svar fra serveren', { code: 'bad_response' });
+    if (msg.refusal) throw new MusikAIError(`Modellen afviste: ${msg.refusal}`, { code: 'refusal' });
+    return { text: msg.content || '', usage: data.usage || null, model: data.model || '' };
+  };
+
+  const ADAPTERS = {
+    ollama: {
+      build(client, req) {
+        const body = {
+          model: client.model,
+          stream: false,
+          messages: [
+            ...(req.system ? [{ role: 'system', content: req.system }] : []),
+            ...req.messages,
+          ],
+          options: { temperature: req.temperature, ...(req.maxTokens ? { num_predict: req.maxTokens } : {}) },
+        };
+        if (req.json) body.format = req.schema || 'json';
+        return { url: joinUrl(client.baseUrl, '/api/chat'), body };
+      },
+      parse(data) {
+        const text = data?.message?.content;
+        if (typeof text !== 'string') throw new MusikAIError('Tomt svar fra Ollama', { code: 'bad_response' });
+        return {
+          text,
+          model: data.model || '',
+          usage: data.eval_count ? { input_tokens: data.prompt_eval_count || 0, output_tokens: data.eval_count } : null,
+        };
+      },
+      modelsUrl: (client) => joinUrl(client.baseUrl, '/api/tags'),
+      parseModels: (data) => (data?.models || []).map((m) => m.name).filter(Boolean),
+    },
+    lmstudio: {
+      build(client, req) {
+        return { url: joinUrl(client.baseUrl, '/chat/completions'), body: openAIStyleBody(client, req, 'json_schema') };
+      },
+      parse: parseOpenAI,
+      modelsUrl: (client) => joinUrl(client.baseUrl, '/models'),
+      parseModels: (data) => (data?.data || []).map((m) => m.id).filter(Boolean),
+    },
+    openai_compatible: {
+      build(client, req) {
+        return { url: joinUrl(client.baseUrl, '/chat/completions'), body: openAIStyleBody(client, req, 'json_object') };
+      },
+      parse: parseOpenAI,
+      modelsUrl: (client) => joinUrl(client.baseUrl, '/models'),
+      parseModels: (data) => (data?.data || []).map((m) => m.id).filter(Boolean),
+    },
+    openai: {
+      build(client, req) {
+        return { url: joinUrl(client.baseUrl, '/chat/completions'), body: openAIStyleBody(client, req, 'json_schema') };
+      },
+      parse: parseOpenAI,
+      modelsUrl: (client) => joinUrl(client.baseUrl, '/models'),
+      parseModels: (data) => (data?.data || []).map((m) => m.id).filter((id) => /^(gpt|o\d)/.test(id)).sort(),
+    },
+    anthropic: {
+      build(client, req) {
+        const body = {
+          model: client.model,
+          max_tokens: req.maxTokens || 8192,
+          // Stable system prompt first → cacheable prefix. Volatile params live in the user turn.
+          system: req.system
+            ? [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }]
+            : undefined,
+          messages: req.messages,
+          output_config: { effort: client.effort },
+        };
+        if (req.json && req.schema) {
+          body.output_config.format = { type: 'json_schema', schema: req.schema };
+        }
+        return { url: joinUrl(client.baseUrl, '/v1/messages'), body };
+      },
+      parse(data) {
+        if (data?.stop_reason === 'refusal') {
+          const why = data?.stop_details?.explanation || data?.stop_details?.category || 'policy';
+          throw new MusikAIError(`Claude afviste anmodningen (${why})`, { code: 'refusal' });
+        }
+        const text = (data?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+        if (!text) throw new MusikAIError('Tomt svar fra Claude', { code: 'bad_response' });
+        return { text, model: data.model || '', usage: data.usage || null, stopReason: data.stop_reason };
+      },
+      modelsUrl: (client) => joinUrl(client.baseUrl, '/v1/models'),
+      parseModels: (data) => (data?.data || []).map((m) => m.id).filter(Boolean),
+    },
+  };
+
+  function headersFor(client) {
+    const h = { 'content-type': 'application/json' };
+    if (client.provider === 'anthropic') {
+      h['x-api-key'] = client.apiKey;
+      h['anthropic-version'] = ANTHROPIC_VERSION;
+      h['anthropic-dangerous-direct-browser-access'] = 'true';
+    } else if (client.apiKey) {
+      h.authorization = `Bearer ${client.apiKey}`;
+    }
+    return h;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Client
+  // ---------------------------------------------------------------------------
+
+  const DEFAULTS = Object.freeze({
+    provider: 'demo',
+    model: '',
+    baseUrl: '',
+    apiKey: '',
+    timeoutMs: 120000,
+    maxRetries: 2,
+    temperature: 0.8,
+    effort: 'medium',
+    fetch: null,
+  });
+
+  /**
+   * @param {Partial<typeof DEFAULTS>} [config]
+   */
+  function createClient(config = {}) {
+    const cfg = { ...DEFAULTS, ...config };
+    const meta = PROVIDERS[cfg.provider];
+    if (!meta) {
+      throw new MusikAIError(`Ukendt provider "${cfg.provider}"`, { code: 'config' });
+    }
+    const fetchImpl = cfg.fetch || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
+
+    const client = {
+      version: VERSION,
+      provider: meta.id,
+      meta,
+      model: (cfg.model || meta.defaultModel || '').trim(),
+      baseUrl: (cfg.baseUrl || meta.baseUrl || '').trim(),
+      apiKey: (cfg.apiKey || '').trim(),
+      timeoutMs: cfg.timeoutMs,
+      maxRetries: cfg.maxRetries,
+      temperature: cfg.temperature,
+      effort: cfg.effort,
+      isLocal: meta.local,
+    };
+
+    function validate() {
+      if (client.provider === 'demo') return;
+      if (!fetchImpl) throw new MusikAIError('fetch() er ikke tilgængelig i dette miljø', { code: 'config' });
+      if (meta.needsKey && !client.apiKey) {
+        throw new MusikAIError(`${meta.label} kræver en API-nøgle`, { code: 'missing_key', provider: client.provider });
+      }
+      if (meta.keyPrefix && client.apiKey && !client.apiKey.startsWith(meta.keyPrefix)) {
+        throw new MusikAIError(`API-nøgle til ${meta.label} skal starte med "${meta.keyPrefix}"`, {
+          code: 'bad_key', provider: client.provider,
+        });
+      }
+      if (!client.model) {
+        throw new MusikAIError('Vælg en model (hent listen fra serveren eller skriv navnet)', {
+          code: 'missing_model', provider: client.provider,
+        });
+      }
+    }
+
+    /**
+     * Low-level chat call. Returns raw text.
+     * EXTERNAL CALL (all providers except demo).
+     * @param {{system?: string, prompt?: string, messages?: {role: string, content: string}[], json?: boolean,
+     *          schema?: object, temperature?: number, maxTokens?: number, signal?: AbortSignal}} req
+     */
+    async function chat(req = {}) {
+      const started = Date.now();
+      const messages = req.messages || [{ role: 'user', content: String(req.prompt || '') }];
+      if (client.provider === 'demo') {
+        await sleep(350 + Math.random() * 400, req.signal);
+        return {
+          text: JSON.stringify(mockSuggestions(req.demoParams || {})),
+          provider: 'demo', model: 'demo', usage: null, durationMs: Date.now() - started,
+        };
+      }
+      validate();
+      const adapter = ADAPTERS[client.provider];
+      const normalized = {
+        system: req.system || '',
+        messages,
+        json: Boolean(req.json),
+        schema: req.schema || null,
+        temperature: typeof req.temperature === 'number' ? req.temperature : client.temperature,
+        maxTokens: req.maxTokens || 0,
+      };
+
+      let attempt = 0;
+      let dropFormat = false;
+      for (;;) {
+        const built = adapter.build(client, dropFormat ? { ...normalized, json: false } : normalized);
+        const res = await fetchWithTimeout(
+          fetchImpl, built.url,
+          { method: 'POST', headers: headersFor(client), body: JSON.stringify(built.body) },
+          client.timeoutMs, req.signal, client.provider,
+        );
+        if (res.ok) {
+          let data;
+          try {
+            data = await res.json();
+          } catch (e) {
+            throw new MusikAIError('Serveren svarede ikke med JSON', { code: 'bad_response', provider: client.provider, cause: e });
+          }
+          const parsed = adapter.parse(data);
+          return { ...parsed, provider: client.provider, durationMs: Date.now() - started };
+        }
+        const detail = await readError(res);
+        const retryable = res.status === 429 || res.status === 408 || res.status >= 500;
+        // Servers that reject structured output: retry once in plain mode (prompt still demands JSON).
+        if (res.status === 400 && normalized.json && !dropFormat && /format|schema|json/i.test(String(detail))) {
+          dropFormat = true;
+          continue;
+        }
+        if (retryable && attempt < client.maxRetries) {
+          await sleep(retryDelay(attempt, res), req.signal);
+          attempt += 1;
+          continue;
+        }
+        const code = res.status === 401 || res.status === 403 ? 'auth'
+          : res.status === 404 ? 'not_found'
+          : res.status === 429 ? 'rate_limit'
+          : res.status >= 500 ? 'server' : 'http';
+        throw new MusikAIError(`${meta.label} fejl ${res.status}: ${String(detail).slice(0, 300)}`, {
+          code, status: res.status, provider: client.provider, retryable,
+        });
+      }
+    }
+
+    /**
+     * Chat + tolerant JSON parse.
+     */
+    async function generateJSON(req = {}) {
+      const r = await chat({ ...req, json: true });
+      const data = parseJSONLoose(r.text);
+      return { data, meta: r };
+    }
+
+    /**
+     * High-level: project params → normalised Suggestions.
+     * @param {Record<string, string>} params
+     * @param {{signal?: AbortSignal, temperature?: number, maxTokens?: number}} [opts]
+     */
+    async function generateSuggestions(params, opts = {}) {
+      const { system, user } = buildCoachPrompt(params);
+      const { data, meta: m } = await generateJSON({
+        system, prompt: user, schema: SUGGESTION_SCHEMA, demoParams: params, ...opts,
+      });
+      const suggestions = normalizeSuggestions(data);
+      const filled = SECTION_KEYS.filter((k) => suggestions[k].length).length + (suggestions.chords.length ? 1 : 0);
+      if (filled === 0) {
+        throw new MusikAIError('Modellen returnerede ingen brugbare forslag', { code: 'empty', provider: client.provider });
+      }
+      return { suggestions, meta: m };
+    }
+
+    /**
+     * List models from the provider. EXTERNAL CALL.
+     * @returns {Promise<string[]>}
+     */
+    async function listModels(signal) {
+      if (client.provider === 'demo') return ['demo'];
+      if (!fetchImpl) throw new MusikAIError('fetch() er ikke tilgængelig', { code: 'config' });
+      const adapter = ADAPTERS[client.provider];
+      const res = await fetchWithTimeout(
+        fetchImpl, adapter.modelsUrl(client), { method: 'GET', headers: headersFor(client) },
+        Math.min(client.timeoutMs, 15000), signal, client.provider,
+      );
+      if (!res.ok) {
+        throw new MusikAIError(`${meta.label}: kunne ikke hente modeller (${res.status})`, {
+          code: res.status === 401 ? 'auth' : 'http', status: res.status, provider: client.provider,
+        });
+      }
+      return adapter.parseModels(await res.json());
+    }
+
+    /**
+     * Connectivity check. Never throws; returns {ok, latencyMs, models, error}.
+     */
+    async function ping(signal) {
+      const t0 = Date.now();
+      try {
+        const models = await listModels(signal);
+        return { ok: true, latencyMs: Date.now() - t0, models, error: null };
+      } catch (e) {
+        return { ok: false, latencyMs: Date.now() - t0, models: [], error: e instanceof Error ? e.message : String(e) };
+      }
+    }
+
+    client.chat = chat;
+    client.generateJSON = generateJSON;
+    client.generateSuggestions = generateSuggestions;
+    client.listModels = listModels;
+    client.ping = ping;
+    client.validate = validate;
+    return client;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Export helpers (Markdown for sharing)
+  // ---------------------------------------------------------------------------
+
+  const SECTION_TITLES = Object.freeze({
+    questions: 'Afklarende spørgsmål',
+    directions: 'Kreative retninger',
+    chords: 'Akkordprogressioner',
+    melodies: 'Melodiske ideer',
+    rhythm: 'Rytme & groove',
+    arrangement: 'Arrangement',
+    production: 'Produktion & mix',
+    lyrics: 'Tekst',
+    actions: 'Next steps',
+  });
+
+  function suggestionsToMarkdown(s, params = {}) {
+    const lines = ['# MusikSparring — forslag', ''];
+    const meta = Object.entries(params).filter(([, v]) => v && String(v).trim());
+    if (meta.length) {
+      lines.push(meta.map(([k, v]) => `- **${k}**: ${String(v).trim()}`).join('\n'), '');
+    }
+    if (s.summary) lines.push(`> ${s.summary}`, '');
+    for (const k of ['questions', 'directions', 'chords', 'melodies', 'rhythm', 'arrangement', 'production', 'lyrics', 'actions']) {
+      const items = s[k];
+      if (!items || !items.length) continue;
+      lines.push(`## ${SECTION_TITLES[k]}`);
+      for (const it of items) {
+        if (k === 'chords') lines.push(`- **${it.label}**: \`${it.chords.join(' – ')}\`${it.note ? ' — ' + it.note : ''}`);
+        else lines.push(`- ${it}`);
+      }
+      lines.push('');
+    }
+    return lines.join('\n').trim() + '\n';
+  }
+
+  return Object.freeze({
+    VERSION,
+    PROVIDERS,
+    SUGGESTION_SCHEMA,
+    SECTION_KEYS,
+    SECTION_TITLES,
+    MusikAIError,
+    createClient,
+    buildCoachPrompt,
+    parseJSONLoose,
+    normalizeSuggestions,
+    mockSuggestions,
+    suggestionsToMarkdown,
+    theory: Object.freeze({ NOTES, normalizeNote, transpose, parseKey, diatonicChords, tokenizeChords }),
+  });
+});
+
+</script>
+  <script>/* src/theory.js */
+/* MusikSparring — music theory module (browser global `Theory`). Pure functions, no side effects. */
+(function (root) {
+  'use strict';
+
+  const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const FLAT_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+  const FLAT_TO_SHARP = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#', Cb: 'B', Fb: 'E', 'E#': 'F', 'B#': 'C' };
+
+  function normalizeNote(note) {
+    if (!note) return null;
+    const m = String(note).trim().match(/^([A-Ga-g])([#b♯♭]?)/);
+    if (!m) return null;
+    const acc = m[2].replace('♯', '#').replace('♭', 'b');
+    const raw = m[1].toUpperCase() + acc;
+    return FLAT_TO_SHARP[raw] || raw;
+  }
+
+  const noteIndex = (note) => NOTES.indexOf(normalizeNote(note));
+  const transpose = (note, semis) => NOTES[((noteIndex(note) + semis) % 12 + 12) % 12];
+  const midi = (note, octave) => 12 * (octave + 1) + noteIndex(note);
+  const freq = (note, octave) => 440 * 2 ** ((midi(note, octave) - 69) / 12);
+
+  const SCALES = {
+    'Dur (Ionisk)': { steps: [0, 2, 4, 5, 7, 9, 11], names: ['R', 'M2', 'M3', 'P4', 'P5', 'M6', 'M7'] },
+    'Mol (Æolisk)': { steps: [0, 2, 3, 5, 7, 8, 10], names: ['R', 'M2', 'm3', 'P4', 'P5', 'm6', 'm7'] },
+    'Dorisk': { steps: [0, 2, 3, 5, 7, 9, 10], names: ['R', 'M2', 'm3', 'P4', 'P5', 'M6', 'm7'] },
+    'Frygisk': { steps: [0, 1, 3, 5, 7, 8, 10], names: ['R', 'm2', 'm3', 'P4', 'P5', 'm6', 'm7'] },
+    'Lydisk': { steps: [0, 2, 4, 6, 7, 9, 11], names: ['R', 'M2', 'M3', 'A4', 'P5', 'M6', 'M7'] },
+    'Mixolydisk': { steps: [0, 2, 4, 5, 7, 9, 10], names: ['R', 'M2', 'M3', 'P4', 'P5', 'M6', 'm7'] },
+    'Lokrisk': { steps: [0, 1, 3, 5, 6, 8, 10], names: ['R', 'm2', 'm3', 'P4', 'd5', 'm6', 'm7'] },
+    'Harmonisk mol': { steps: [0, 2, 3, 5, 7, 8, 11], names: ['R', 'M2', 'm3', 'P4', 'P5', 'm6', 'M7'] },
+    'Melodisk mol': { steps: [0, 2, 3, 5, 7, 9, 11], names: ['R', 'M2', 'm3', 'P4', 'P5', 'M6', 'M7'] },
+    'Pentaton dur': { steps: [0, 2, 4, 7, 9], names: ['R', 'M2', 'M3', 'P5', 'M6'] },
+    'Pentaton mol': { steps: [0, 3, 5, 7, 10], names: ['R', 'm3', 'P4', 'P5', 'm7'] },
+    'Blues': { steps: [0, 3, 5, 6, 7, 10], names: ['R', 'm3', 'P4', 'd5', 'P5', 'm7'] },
+  };
+
+  const getScaleNotes = (root, scale) => SCALES[scale].steps.map((s) => transpose(root, s));
+
+  const QUALITIES = {
+    '': [0, 4, 7], m: [0, 3, 7], dim: [0, 3, 6], aug: [0, 4, 8], sus2: [0, 2, 7], sus4: [0, 5, 7], 5: [0, 7],
+    6: [0, 4, 7, 9], m6: [0, 3, 7, 9], 7: [0, 4, 7, 10], maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10],
+    dim7: [0, 3, 6, 9], m7b5: [0, 3, 6, 10], mmaj7: [0, 3, 7, 11], add9: [0, 4, 7, 14],
+    9: [0, 4, 7, 10, 14], m9: [0, 3, 7, 10, 14], maj9: [0, 4, 7, 11, 14], 11: [0, 4, 7, 10, 14, 17],
+    13: [0, 4, 7, 10, 14, 21], add11: [0, 4, 7, 17],
+  };
+  const QUALITY_ALIASES = {
+    maj: '', M: '', major: '', min: 'm', minor: 'm', '-': 'm', '-7': 'm7', 'Δ': 'maj7', 'Δ7': 'maj7', M7: 'maj7',
+    '°': 'dim', 'º': 'dim', o: 'dim', 'ø': 'm7b5', 'ø7': 'm7b5', '+': 'aug', sus: 'sus4', mMaj7: 'mmaj7', maj13: '13',
+    m11: '11', min7: 'm7',
+  };
+  const QUALITY_LABELS = {
+    '': 'dur', m: 'mol', dim: 'formindsket', aug: 'forstørret', sus2: 'sus2', sus4: 'sus4', 5: 'power chord',
+    6: 'sekst', m6: 'mol sekst', 7: 'dominant 7', maj7: 'maj7', m7: 'mol 7', dim7: 'dim7', m7b5: 'halvformindsket',
+    mmaj7: 'mol maj7', add9: 'add9', 9: 'dominant 9', m9: 'mol 9', maj9: 'maj9', 11: '11', 13: '13', add11: 'add11',
+  };
+
+  /** Parse "F#m7/A" → { symbol, root, quality, intervals, bass, label } or null. */
+  function parseChord(symbol) {
+    if (!symbol) return null;
+    const m = String(symbol).trim().match(/^([A-Ga-g])([#b♯♭]?)([^/\s]*)(?:\/([A-G][#b♯♭]?))?$/);
+    if (!m) return null;
+    const root = normalizeNote(m[1] + m[2]);
+    let q = m[3] || '';
+    if (QUALITY_ALIASES[q] !== undefined) q = QUALITY_ALIASES[q];
+    if (QUALITIES[q] === undefined) return null;
+    const bass = m[4] ? normalizeNote(m[4]) : null;
+    return {
+      symbol: root + q + (bass ? '/' + bass : ''),
+      root, quality: q, intervals: QUALITIES[q], bass,
+      label: `${root} ${QUALITY_LABELS[q] || q}`,
+    };
+  }
+
+  const chordNotes = (symbol) => {
+    const c = parseChord(symbol);
+    return c ? c.intervals.map((i) => transpose(c.root, i)) : [];
+  };
+
+  /** Ascending voicing from a base octave: [{note, octave, midi}]. */
+  function chordVoicing(symbol, baseOctave = 4) {
+    const c = parseChord(symbol);
+    if (!c) return [];
+    const rootMidi = midi(c.root, baseOctave);
+    const toObj = (n) => ({ note: NOTES[n % 12], octave: Math.floor(n / 12) - 1, midi: n });
+    let tones = c.intervals.map((i) => rootMidi + i);
+    if (c.bass && c.bass !== c.root) {
+      // Slash chord: bass note lowest, remaining chord tones stacked above it (inversion).
+      const b = midi(c.bass, baseOctave);
+      tones = tones
+        .filter((n) => n % 12 !== b % 12)
+        .map((n) => (n <= b ? n + 12 : n))
+        .sort((x, y) => x - y);
+      tones.unshift(b);
+    }
+    return tones.map(toObj);
+  }
+
+  // ---- Keys & roman numerals -------------------------------------------------
+
+  function parseKey(text) {
+    if (!text) return null;
+    const m = String(text).trim().match(/^([A-Ga-g][#b♯♭]?)\s*(.*)$/);
+    if (!m) return null;
+    const rest = m[2].toLowerCase().trim();
+    const minor = /^(m\b|min|minor|mol|aeolian|æolisk|-)/.test(rest);
+    return { root: normalizeNote(m[1]), mode: minor ? 'minor' : 'major' };
+  }
+
+  const ROMAN = { i: 0, ii: 1, iii: 2, iv: 3, v: 4, vi: 5, vii: 6 };
+  const DEGREE_STEPS = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
+  const DEGREE_QUAL = { major: ['', 'm', 'm', '', '', 'm', 'dim'], minor: ['m', 'dim', '', 'm', 'm', '', ''] };
+
+  function diatonicChords(root, mode) {
+    const steps = DEGREE_STEPS[mode] || DEGREE_STEPS.major;
+    const quals = DEGREE_QUAL[mode] || DEGREE_QUAL.major;
+    const romans = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+    return steps.map((s, i) => {
+      const q = quals[i];
+      const roman = q === 'm' ? romans[i].toLowerCase() : q === 'dim' ? romans[i].toLowerCase() + '°' : romans[i];
+      return { degree: i + 1, roman, symbol: transpose(root, s) + q };
+    });
+  }
+
+  /** "I–V–vi–IV" in a key → ["C","G","Am","F"]. Unknown tokens are skipped. */
+  function romanToChords(text, key) {
+    const k = typeof key === 'string' ? parseKey(key) : key;
+    if (!k || !text) return [];
+    const steps = DEGREE_STEPS[k.mode];
+    return String(text)
+      .split(/[\s–—|,-]+/)
+      .map((tok) => {
+        const m = tok.match(/^([#b]?)([ivIV]+)(°|º|o|ø|\+)?(maj7|m7b5|7|9|sus4|sus2)?$/);
+        if (!m) return null;
+        const deg = ROMAN[m[2].toLowerCase()];
+        if (deg === undefined) return null;
+        const acc = m[1] === '#' ? 1 : m[1] === 'b' ? -1 : 0;
+        const root = transpose(k.root, steps[deg] + acc);
+        const minor = m[2] === m[2].toLowerCase();
+        let q = minor ? 'm' : '';
+        if (m[3] === '°' || m[3] === 'º' || m[3] === 'o') q = 'dim';
+        if (m[3] === 'ø') q = 'm7b5';
+        if (m[3] === '+') q = 'aug';
+        if (m[4]) {
+          if (m[4] === '7') q = q === 'm' ? 'm7' : q === 'dim' ? 'dim7' : q === '' ? '7' : q;
+          else if (m[4] === 'maj7') q = 'maj7';
+          else if (m[4] === '9') q = q === 'm' ? 'm9' : '9';
+          else q = m[4];
+        }
+        return root + q;
+      })
+      .filter(Boolean);
+  }
+
+  // ---- Guitar -----------------------------------------------------------------
+
+  const TUNING = ['E', 'A', 'D', 'G', 'B', 'E']; // low → high
+  const TUNING_OCT = [2, 2, 3, 3, 3, 4];
+
+  // Movable shapes: frets per string low→high relative to the open shape, -1 = muted.
+  const E_SHAPES = {
+    '': [0, 2, 2, 1, 0, 0], m: [0, 2, 2, 0, 0, 0], 7: [0, 2, 0, 1, 0, 0], m7: [0, 2, 0, 0, 0, 0],
+    maj7: [0, 2, 1, 1, 0, 0], sus4: [0, 2, 2, 2, 0, 0], 5: [0, 2, 2, -1, -1, -1], add9: [0, 2, 2, 1, 0, 2],
+  };
+  const A_SHAPES = {
+    '': [-1, 0, 2, 2, 2, 0], m: [-1, 0, 2, 2, 1, 0], 7: [-1, 0, 2, 0, 2, 0], m7: [-1, 0, 2, 0, 1, 0],
+    maj7: [-1, 0, 2, 1, 2, 0], sus4: [-1, 0, 2, 2, 3, 0], sus2: [-1, 0, 2, 2, 0, 0], dim: [-1, 0, 1, 2, 1, -1],
+    aug: [-1, 0, 3, 2, 2, 1], 6: [-1, 0, 2, 2, 2, 2], add9: [-1, 0, 2, 4, 2, 0], 9: [-1, 0, 2, 4, 2, 3],
+    m6: [-1, 0, 2, 2, 1, 2], dim7: [-1, 0, 1, 2, 1, 2], m7b5: [-1, 0, 1, 0, 1, -1], 5: [-1, 0, 2, 2, -1, -1],
+    m9: [-1, 0, 2, 4, 1, 3], mmaj7: [-1, 0, 2, 1, 1, 0], maj9: [-1, 0, 2, 1, 0, 0],
+  };
+
+  /**
+   * Playable guitar shape for a chord symbol:
+   * { frets: number[6], base: number, barre: boolean, root: string } or null if no shape known.
+   */
+  function guitarShape(symbol) {
+    const c = parseChord(symbol);
+    if (!c) return null;
+    const ri = noteIndex(c.root);
+    const candidates = [];
+    if (E_SHAPES[c.quality]) candidates.push({ shape: E_SHAPES[c.quality], offset: (ri - 4 + 12) % 12 });
+    if (A_SHAPES[c.quality]) candidates.push({ shape: A_SHAPES[c.quality], offset: (ri - 9 + 12) % 12 });
+    if (!candidates.length) return null;
+    candidates.sort((a, b) => a.offset - b.offset);
+    const { shape, offset } = candidates[0];
+    const frets = shape.map((f) => (f < 0 ? -1 : f + offset));
+    const played = frets.filter((f) => f > 0);
+    const base = played.length ? Math.min(...played) : 0;
+    return { frets, base: offset > 0 ? Math.max(1, Math.min(base, offset)) : 0, barre: offset > 0, root: c.root };
+  }
+
+  /** Note name at a fretboard position. stringIdx 0 = low E. */
+  const fretNote = (stringIdx, fret) => transpose(TUNING[stringIdx], fret);
+  const fretMidi = (stringIdx, fret) => midi(TUNING[stringIdx], TUNING_OCT[stringIdx]) + fret;
+
+  root.Theory = Object.freeze({
+    NOTES, FLAT_NAMES, SCALES, QUALITIES, QUALITY_LABELS, TUNING,
+    normalizeNote, noteIndex, transpose, midi, freq,
+    getScaleNotes, parseChord, chordNotes, chordVoicing,
+    parseKey, diatonicChords, romanToChords,
+    guitarShape, fretNote, fretMidi,
+  });
+})(typeof globalThis !== 'undefined' ? globalThis : window);
+
+</script>
+  <script>/* src/audio.js */
+/* MusikSparring — Web Audio engine (browser global `AudioKit`). Single shared AudioContext.
+ * Side effects: creates an AudioContext lazily on first user gesture; emits sound. */
+(function (root) {
+  'use strict';
+
+  const T = root.Theory;
+
+  let ctx = null;
+  let master = null;
+  let noiseBuffer = null;
+
+  function ensure() {
+    if (ctx) return ctx;
+    const AC = root.AudioContext || root.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -12;
+    comp.ratio.value = 4;
+    master = ctx.createGain();
+    master.gain.value = 0.7;
+    master.connect(comp);
+    comp.connect(ctx.destination);
+    return ctx;
+  }
+
+  async function resume() {
+    const c = ensure();
+    if (!c) return null;
+    if (c.state === 'suspended') {
+      try {
+        await c.resume();
+      } catch {
+        /* user gesture required; ignore */
+      }
+    }
+    return c;
+  }
+
+  const now = () => (ctx ? ctx.currentTime : 0);
+
+  function getNoise() {
+    if (noiseBuffer) return noiseBuffer;
+    const len = ctx.sampleRate;
+    noiseBuffer = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return noiseBuffer;
+  }
+
+  /** Piano-ish tone: two detuned oscillators + octave partial through a lowpass with ADSR. */
+  function tone(freq, when, opts = {}) {
+    const c = ensure();
+    if (!c) return;
+    const dur = opts.duration ?? 0.8;
+    const vel = opts.velocity ?? 0.5;
+    const t0 = Math.max(when, c.currentTime);
+
+    const env = c.createGain();
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.exponentialRampToValueAtTime(vel, t0 + 0.012);
+    env.gain.exponentialRampToValueAtTime(vel * 0.55, t0 + 0.18);
+    env.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(Math.min(freq * 6, 8000), t0);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.5, 300), t0 + dur);
+    lp.Q.value = 0.7;
+
+    const partials = [
+      { type: 'triangle', mult: 1, gain: 1, detune: 0 },
+      { type: 'sine', mult: 1, gain: 0.5, detune: 6 },
+      { type: 'sine', mult: 2, gain: 0.18, detune: 0 },
+    ];
+    for (const p of partials) {
+      const o = c.createOscillator();
+      o.type = p.type;
+      o.frequency.value = freq * p.mult;
+      o.detune.value = p.detune;
+      const g = c.createGain();
+      g.gain.value = p.gain;
+      o.connect(g);
+      g.connect(lp);
+      o.start(t0);
+      o.stop(t0 + dur + 0.05);
+    }
+    lp.connect(env);
+    env.connect(master);
+  }
+
+  async function playNote(note, octave = 4, opts = {}) {
+    const c = await resume();
+    if (!c) return;
+    tone(T.freq(note, octave), c.currentTime + (opts.delay || 0), opts);
+  }
+
+  /** @param {{note:string, octave:number}[]} voicing */
+  async function playChord(voicing, opts = {}) {
+    const c = await resume();
+    if (!c) return;
+    const strum = opts.strum ?? 0.035;
+    const start = c.currentTime + (opts.delay || 0);
+    voicing.forEach((v, i) => tone(T.freq(v.note, v.octave), start + i * strum, {
+      duration: opts.duration ?? 1.8, velocity: (opts.velocity ?? 0.42) / Math.sqrt(voicing.length) * 1.6,
+    }));
+  }
+
+  async function playSequence(notes, opts = {}) {
+    const c = await resume();
+    if (!c) return;
+    const gap = opts.gap ?? 0.22;
+    notes.forEach((n, i) => tone(T.freq(n.note, n.octave), c.currentTime + i * gap, {
+      duration: opts.duration ?? 0.5, velocity: opts.velocity ?? 0.45,
+    }));
+  }
+
+  function drum(type, when, velocity = 1) {
+    const c = ensure();
+    if (!c) return;
+    const t0 = Math.max(when, c.currentTime);
+    const out = c.createGain();
+    out.connect(master);
+
+    if (type === 'kick') {
+      const o = c.createOscillator();
+      o.frequency.setValueAtTime(160, t0);
+      o.frequency.exponentialRampToValueAtTime(45, t0 + 0.12);
+      out.gain.setValueAtTime(1.1 * velocity, t0);
+      out.gain.exponentialRampToValueAtTime(0.001, t0 + 0.45);
+      o.connect(out);
+      o.start(t0);
+      o.stop(t0 + 0.5);
+      const click = c.createBufferSource();
+      click.buffer = getNoise();
+      const cg = c.createGain();
+      cg.gain.setValueAtTime(0.25 * velocity, t0);
+      cg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.02);
+      click.connect(cg);
+      cg.connect(master);
+      click.start(t0);
+      click.stop(t0 + 0.03);
+      return;
+    }
+    if (type === 'snare') {
+      const n = c.createBufferSource();
+      n.buffer = getNoise();
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1800;
+      bp.Q.value = 0.8;
+      out.gain.setValueAtTime(0.7 * velocity, t0);
+      out.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+      n.connect(bp);
+      bp.connect(out);
+      n.start(t0);
+      n.stop(t0 + 0.25);
+      const o = c.createOscillator();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(220, t0);
+      o.frequency.exponentialRampToValueAtTime(120, t0 + 0.08);
+      const og = c.createGain();
+      og.gain.setValueAtTime(0.5 * velocity, t0);
+      og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.12);
+      o.connect(og);
+      og.connect(master);
+      o.start(t0);
+      o.stop(t0 + 0.15);
+      return;
+    }
+    if (type === 'hihat' || type === 'openhat') {
+      const n = c.createBufferSource();
+      n.buffer = getNoise();
+      const hp = c.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 7000;
+      const len = type === 'openhat' ? 0.35 : 0.06;
+      out.gain.setValueAtTime(0.35 * velocity, t0);
+      out.gain.exponentialRampToValueAtTime(0.001, t0 + len);
+      n.connect(hp);
+      hp.connect(out);
+      n.start(t0);
+      n.stop(t0 + len + 0.02);
+      return;
+    }
+    if (type === 'clap') {
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1200;
+      bp.Q.value = 1.2;
+      bp.connect(out);
+      out.gain.value = 0.6 * velocity;
+      [0, 0.012, 0.024, 0.04].forEach((off, i) => {
+        const n = c.createBufferSource();
+        n.buffer = getNoise();
+        const g = c.createGain();
+        g.gain.setValueAtTime(i === 3 ? 1 : 0.6, t0 + off);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + off + (i === 3 ? 0.18 : 0.012));
+        n.connect(g);
+        g.connect(bp);
+        n.start(t0 + off);
+        n.stop(t0 + off + 0.2);
+      });
+    }
+  }
+
+  async function playDrum(type, velocity = 1) {
+    const c = await resume();
+    if (!c) return;
+    drum(type, c.currentTime, velocity);
+  }
+
+  /**
+   * Lookahead step sequencer. onStep(stepIndex, audioTime) is called ahead of time;
+   * onVisual(stepIndex) fires roughly when the step is audible.
+   */
+  function createSequencer({ steps = 16, bpm = 120, swing = 0, onStep, onVisual }) {
+    const LOOKAHEAD = 0.12;
+    const TICK = 25;
+    let timer = null;
+    let step = 0;
+    let nextTime = 0;
+    let visualTimers = [];
+    const state = { bpm, swing, running: false };
+
+    function stepLength(i) {
+      const base = 60 / state.bpm / 4;
+      const s = Math.max(0, Math.min(0.5, state.swing));
+      return i % 2 === 0 ? base * (1 + s) : base * (1 - s);
+    }
+
+    function tick() {
+      while (nextTime < ctx.currentTime + LOOKAHEAD) {
+        const i = step;
+        const t = nextTime;
+        onStep(i, t);
+        if (onVisual) {
+          const h = setTimeout(() => onVisual(i), Math.max(0, (t - ctx.currentTime) * 1000));
+          visualTimers.push(h);
+          if (visualTimers.length > 64) visualTimers = visualTimers.slice(-32);
+        }
+        nextTime += stepLength(i);
+        step = (step + 1) % steps;
+      }
+    }
+
+    return {
+      state,
+      async start() {
+        const c = await resume();
+        if (!c || state.running) return;
+        state.running = true;
+        step = 0;
+        nextTime = c.currentTime + 0.05;
+        timer = setInterval(tick, TICK);
+        tick();
+      },
+      stop() {
+        state.running = false;
+        if (timer) clearInterval(timer);
+        timer = null;
+        visualTimers.forEach(clearTimeout);
+        visualTimers = [];
+        if (onVisual) onVisual(-1);
+      },
+      setBpm(v) { state.bpm = v; },
+      setSwing(v) { state.swing = v; },
+    };
+  }
+
+  root.AudioKit = Object.freeze({
+    ensure, resume, now, playNote, playChord, playSequence, drum, playDrum, createSequencer,
+    get context() { return ctx; },
+  });
+})(typeof globalThis !== 'undefined' ? globalThis : window);
+
+</script>
+  <script>/* src/app.js */
+/* MusikSparring Pro v3 — UI (Preact + htm, no build step).
+ * Globals expected: preact, preactHooks, htm, MusikAI, Theory, AudioKit. */
+(function () {
+  'use strict';
+
+  const { h, render, Fragment } = window.preact;
+  const { useState, useEffect, useRef, useCallback, useMemo } = window.preactHooks;
+  const html = window.htm.bind(h);
+  const T = window.Theory;
+  const A = window.AudioKit;
+  const AI = window.MusikAI;
+
+  // ---------------------------------------------------------------------------
+  // Storage (side effect: localStorage on this device only)
+  // ---------------------------------------------------------------------------
+  const KEYS = { params: 'ms3.params', settings: 'ms3.settings', history: 'ms3.history', tab: 'ms3.tab' };
+  const store = {
+    get(k, fallback) {
+      try {
+        const v = localStorage.getItem(k);
+        return v == null ? fallback : JSON.parse(v);
+      } catch {
+        return fallback;
+      }
+    },
+    set(k, v) {
+      try {
+        localStorage.setItem(k, JSON.stringify(v));
+      } catch {
+        /* quota / private mode */
+      }
+    },
+    raw(k) {
+      try {
+        return localStorage.getItem(k);
+      } catch {
+        return null;
+      }
+    },
+  };
+
+  const EMPTY_PARAMS = { genre: '', mood: '', bpm: '', key: '', references: '', existing: '', constraints: '', goals: '' };
+  const DEFAULT_SETTINGS = { provider: 'demo', temperature: 0.8, configs: {} };
+
+  function loadSettings() {
+    const s = store.get(KEYS.settings, null);
+    if (s) return { ...DEFAULT_SETTINGS, ...s, configs: s.configs || {} };
+    // Migrate v2 keys.
+    const legacyKey = store.raw('musiksparring_api_key');
+    const legacyProvider = store.raw('musiksparring_provider');
+    if (legacyKey) {
+      const provider = legacyProvider === 'openai' ? 'openai' : 'anthropic';
+      return { ...DEFAULT_SETTINGS, provider, configs: { [provider]: { apiKey: legacyKey } } };
+    }
+    return { ...DEFAULT_SETTINGS };
+  }
+
+  function loadParams() {
+    const p = store.get(KEYS.params, null) || store.get('musiksparring_params', null) || {};
+    return { ...EMPTY_PARAMS, ...p };
+  }
+
+  function activeConfig(settings) {
+    const meta = AI.PROVIDERS[settings.provider] || AI.PROVIDERS.demo;
+    const c = settings.configs[meta.id] || {};
+    return {
+      provider: meta.id,
+      baseUrl: c.baseUrl || meta.baseUrl,
+      model: c.model || meta.defaultModel,
+      apiKey: c.apiKey || '',
+      temperature: settings.temperature,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Icons
+  // ---------------------------------------------------------------------------
+  const ICONS = {
+    edit: ['M12 20h9', 'M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'],
+    sliders: ['M4 21v-7', 'M4 10V3', 'M12 21v-9', 'M12 8V3', 'M20 21v-5', 'M20 12V3', 'M1 14h6', 'M9 8h6', 'M17 16h6'],
+    sparkles: ['M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z', 'M19 17l.8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8L19 17z'],
+    clock: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 6v6l4 2'],
+    settings: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
+    play: ['M6 4l14 8-14 8V4z'],
+    stop: ['M6 6h12v12H6z'],
+    copy: ['M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z', 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'],
+    download: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'M7 10l5 5 5-5', 'M12 15V3'],
+    trash: ['M3 6h18', 'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2', 'M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'],
+    check: ['M20 6L9 17l-5-5'],
+    x: ['M18 6L6 18', 'M6 6l12 12'],
+    alert: ['M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', 'M12 9v4', 'M12 17h.01'],
+    info: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 16v-4', 'M12 8h.01'],
+    music: ['M9 18V5l12-2v13', 'M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', 'M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
+    zap: ['M13 2L3 14h9l-1 8 10-12h-9l1-8z'],
+    refresh: ['M23 4v6h-6', 'M1 20v-6h6', 'M3.5 9a9 9 0 0 1 14.9-3.4L23 10', 'M1 14l4.6 4.4A9 9 0 0 0 20.5 15'],
+    activity: ['M22 12h-4l-3 9L9 3l-3 9H2'],
+    mic: ['M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z', 'M19 10v2a7 7 0 0 1-14 0v-2', 'M12 19v4', 'M8 23h8'],
+    layers: ['M12 2L2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'],
+    disc: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
+    help: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3', 'M12 17h.01'],
+    feather: ['M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z', 'M16 8L2 22', 'M17.5 15H9'],
+    compass: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z'],
+    shuffle: ['M16 3h5v5', 'M4 20L21 3', 'M21 16v5h-5', 'M15 15l6 6', 'M4 4l5 5'],
+    arrow: ['M5 12h14', 'M12 5l7 7-7 7'],
+    target: ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z', 'M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'],
+  };
+  const Icon = ({ name, size = 18, fill = false }) => html`
+    <svg width=${size} height=${size} viewBox="0 0 24 24" fill=${fill ? 'currentColor' : 'none'} stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      ${(ICONS[name] || []).map((d) => html`<path d=${d} />`)}
+    </svg>`;
+
+  // ---------------------------------------------------------------------------
+  // Small shared components
+  // ---------------------------------------------------------------------------
+  const Toasts = ({ items }) => html`
+    <div class="toasts" role="status" aria-live="polite">
+      ${items.map((t) => html`<div key=${t.id} class=${'toast ' + t.kind}>
+        <${Icon} name=${t.kind === 'ok' ? 'check' : t.kind === 'err' ? 'alert' : 'info'} size=${16} />
+        <div>${t.text}</div>
+      </div>`)}
+    </div>`;
+
+  const Chips = ({ options, value, onPick, color = '' }) => html`
+    <div class="chips">
+      ${options.map((o) => html`<button type="button" key=${o}
+        class=${'chip ' + color + (String(value || '').toLowerCase() === o.toLowerCase() ? ' is-on' : '')}
+        onClick=${() => onPick(o)}>${o}</button>`)}
+    </div>`;
+
+  // ---------------------------------------------------------------------------
+  // Piano (2 octaves)
+  // ---------------------------------------------------------------------------
+  const WHITE = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  const BLACK = { 'C#': 1, 'D#': 2, 'F#': 4, 'G#': 5, 'A#': 6 };
+  const KEY_W = 45; // 44px + 1px gap
+
+  function Piano({ octaves = 2, startOctave = 4, scale, chord, root, chordMidis, onPlay }) {
+    const [playing, setPlaying] = useState(null);
+    const play = (note, oct) => {
+      setPlaying(`${note}${oct}`);
+      setTimeout(() => setPlaying(null), 260);
+      A.playNote(note, oct, { duration: 0.9, velocity: 0.5 });
+      if (onPlay) onPlay(note, oct);
+    };
+    const cls = (note, oct, base) => {
+      const m = T.midi(note, oct);
+      const inChord = chordMidis ? chordMidis.has(m) : chord && chord.has(note);
+      return [
+        'key', base,
+        scale && scale.has(note) ? 'is-scale' : '',
+        inChord ? 'is-chord' : '',
+        root && note === root && (inChord || !chordMidis) && (scale || inChord) ? 'is-root' : '',
+        playing === `${note}${oct}` ? 'is-playing' : '',
+      ].join(' ');
+    };
+    const keys = [];
+    for (let o = 0; o < octaves; o++) {
+      const oct = startOctave + o;
+      WHITE.forEach((n) => keys.push(html`<button type="button" key=${n + oct} class=${cls(n, oct, 'white')}
+        aria-label=${`Spil ${n}${oct}`} onClick=${() => play(n, oct)}>
+        <span class="key-label">${n}${n === 'C' ? oct : ''}</span></button>`));
+    }
+    const blacks = [];
+    for (let o = 0; o < octaves; o++) {
+      const oct = startOctave + o;
+      Object.entries(BLACK).forEach(([n, pos]) => blacks.push(html`<button type="button" key=${n + oct}
+        class=${cls(n, oct, 'black')} style=${{ left: `${(o * 7 + pos) * KEY_W}px` }}
+        aria-label=${`Spil ${n}${oct}`} onClick=${() => play(n, oct)}>
+        <span class="key-label">${n}</span></button>`));
+    }
+    return html`<div class="piano-wrap"><div class="piano" role="group" aria-label="Klaviatur">${keys}${blacks}</div></div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Fretboard (SVG). mode 'scale' → tone map over 12 frets; mode 'chord' → shape window.
+  // ---------------------------------------------------------------------------
+  function Fretboard({ mode, notes, root, shape }) {
+    const strings = 6;
+    const fretCount = mode === 'chord' ? 5 : 12;
+    const base = mode === 'chord' && shape ? shape.base : 0;
+    const origin = base > 0 ? base - 1 : 0; // fret wire at the left edge of the board
+    const left = 34;
+    const top = 18;
+    const fretW = mode === 'chord' ? 64 : 40;
+    const stringGap = 22;
+    const width = left + fretW * fretCount + 20;
+    const height = top + stringGap * (strings - 1) + 34;
+    const fretX = (f) => left + (f - origin) * fretW; // position of fret wire f
+    const posX = (f) => (f === 0 ? left - 14 : fretX(f) - fretW / 2);
+    const stringY = (sIdx) => top + (strings - 1 - sIdx) * stringGap; // sIdx 0 = low E (bottom)
+    const inlays = [3, 5, 7, 9, 12, 15];
+    const dots = [];
+    const extras = [];
+
+    if (mode === 'chord' && shape) {
+      shape.frets.forEach((f, sIdx) => {
+        if (f < 0) {
+          extras.push(html`<text key=${'x' + sIdx} class="fb-muted" x=${left - 14} y=${stringY(sIdx) + 4}>×</text>`);
+          return;
+        }
+        const note = T.fretNote(sIdx, f);
+        const isRoot = note === shape.root;
+        dots.push(html`<g key=${'d' + sIdx}>
+          <circle class=${'fb-dot' + (isRoot ? ' root' : '')} cx=${posX(f)} cy=${stringY(sIdx)} r="9" />
+          <text class="fb-dot-label" x=${posX(f)} y=${stringY(sIdx) + 3}>${note}</text></g>`);
+      });
+      if (shape.barre) {
+        const barreFret = Math.min(...shape.frets.filter((f) => f > 0));
+        const barred = shape.frets.map((f, i) => (f === barreFret ? i : -1)).filter((i) => i >= 0);
+        if (barred.length >= 2) {
+          const lo = Math.min(...barred);
+          const hi = Math.max(...barred);
+          extras.unshift(html`<rect key="barre" class="fb-barre" x=${posX(barreFret) - 9} y=${stringY(hi) - 9}
+            width="18" height=${stringY(lo) - stringY(hi) + 18} rx="9" />`);
+        }
+      }
+    } else if (notes) {
+      for (let s = 0; s < strings; s++) {
+        for (let f = 0; f <= fretCount; f++) {
+          const note = T.fretNote(s, f);
+          if (!notes.has(note)) continue;
+          dots.push(html`<g key=${`${s}-${f}`}>
+            <circle class=${'fb-dot' + (note === root ? ' root' : '')} cx=${posX(f)} cy=${stringY(s)} r="8" />
+            <text class="fb-dot-label" x=${posX(f)} y=${stringY(s) + 3}>${note}</text></g>`);
+        }
+      }
+    }
+
+    const lastFret = origin + fretCount;
+    const fretWires = [];
+    for (let f = origin + 1; f <= lastFret; f++) {
+      fretWires.push(html`<line key=${'f' + f} class="fb-fret" x1=${fretX(f)} x2=${fretX(f)} y1=${top - 4} y2=${stringY(0) + 4} />`);
+    }
+    const inlayDots = inlays.filter((f) => f > origin && f <= lastFret).map((f) => html`
+      <circle key=${'i' + f} class="fb-inlay" cx=${posX(f)} cy=${(stringY(0) + stringY(5)) / 2} r=${f % 12 === 0 ? 6 : 4.5} />`);
+    const labels = [];
+    for (let f = origin + 1; f <= lastFret; f++) {
+      if (mode === 'chord' || inlays.includes(f) || f === 1) {
+        labels.push(html`<text key=${'l' + f} class="fb-label" x=${posX(f)} y=${height - 8}>${f}</text>`);
+      }
+    }
+    const boardX = origin === 0 ? left : fretX(origin);
+
+    return html`<svg class="fretboard" viewBox=${`0 0 ${width} ${height}`} role="img" aria-label="Gribebræt">
+      <defs><linearGradient id="wood" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#2a2420" /><stop offset="1" stop-color="#171311" /></linearGradient></defs>
+      <rect class="fb-board" x=${boardX} y=${top - 10} width=${width - boardX - 20} height=${stringY(0) - top + 20} rx="4" />
+      ${origin === 0 ? html`<rect class="fb-nut" x=${left - 4} y=${top - 10} width="5" height=${stringY(0) - top + 20} rx="1" />` : null}
+      ${inlayDots}
+      ${fretWires}
+      ${Array.from({ length: strings }, (_, s) => html`<line key=${'s' + s} class="fb-string"
+        x1=${left - 4} x2=${width - 20} y1=${stringY(s)} y2=${stringY(s)} style=${{ strokeWidth: 1 + (5 - s) * 0.35 }} />`)}
+      ${extras}
+      ${dots}
+      ${labels}
+    </svg>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scale Lab
+  // ---------------------------------------------------------------------------
+  const SCALE_NAMES = Object.keys(T.SCALES);
+
+  function triadsFromScale(notes) {
+    if (notes.length !== 7) return [];
+    return notes.map((n, i) => {
+      const third = (T.noteIndex(notes[(i + 2) % 7]) - T.noteIndex(n) + 12) % 12;
+      const fifth = (T.noteIndex(notes[(i + 4) % 7]) - T.noteIndex(n) + 12) % 12;
+      const q = third === 4 && fifth === 7 ? '' : third === 3 && fifth === 7 ? 'm' : third === 3 && fifth === 6 ? 'dim' : third === 4 && fifth === 8 ? 'aug' : null;
+      return q === null ? null : n + q;
+    }).filter(Boolean);
+  }
+
+  function ScaleLab({ initialKey, onPickChord }) {
+    const parsed = useMemo(() => T.parseKey(initialKey), [initialKey]);
+    const [root, setRoot] = useState(parsed?.root || 'C');
+    const [scale, setScale] = useState(parsed?.mode === 'minor' ? 'Mol (Æolisk)' : 'Dur (Ionisk)');
+    const [showIntervals, setShowIntervals] = useState(false);
+    useEffect(() => {
+      if (parsed) {
+        setRoot(parsed.root);
+        setScale(parsed.mode === 'minor' ? 'Mol (Æolisk)' : 'Dur (Ionisk)');
+      }
+    }, [parsed]);
+
+    const notes = useMemo(() => T.getScaleNotes(root, scale), [root, scale]);
+    const names = T.SCALES[scale].names;
+    const set = useMemo(() => new Set(notes), [notes]);
+    const triads = useMemo(() => triadsFromScale(notes), [notes]);
+
+    const playScale = () => {
+      const seq = [];
+      let oct = 4;
+      let prev = -1;
+      for (const n of notes) {
+        const idx = T.noteIndex(n);
+        if (idx < prev) oct += 1;
+        prev = idx;
+        seq.push({ note: n, octave: oct });
+      }
+      seq.push({ note: root, octave: oct + (T.noteIndex(root) <= prev ? 1 : 0) });
+      A.playSequence(seq, { gap: 0.2, duration: 0.5 });
+    };
+
+    return html`<div class="card">
+      <div class="card-head">
+        <span class="section-icon teal"><${Icon} name="music" /></span>
+        <div><div class="card-title">Scale Lab</div><div class="card-sub">Toner, intervaller og diatoniske akkorder</div></div>
+        <div class="card-actions">
+          <button class="btn btn-sm" onClick=${() => setShowIntervals(!showIntervals)}>${showIntervals ? 'Vis toner' : 'Vis intervaller'}</button>
+          <button class="btn btn-sm btn-primary" onClick=${playScale}><${Icon} name="play" fill /> Afspil skala</button>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:16px">
+        <label class="field"><span class="label">Grundtone</span>
+          <select class="select" value=${root} onChange=${(e) => setRoot(e.target.value)}>
+            ${T.NOTES.map((n, i) => html`<option key=${n} value=${n}>${n}${T.FLAT_NAMES[i] !== n ? ` / ${T.FLAT_NAMES[i]}` : ''}</option>`)}
+          </select></label>
+        <label class="field" style="grid-column: span 2"><span class="label">Skala / modus</span>
+          <select class="select" value=${scale} onChange=${(e) => setScale(e.target.value)}>
+            ${SCALE_NAMES.map((s) => html`<option key=${s} value=${s}>${s}</option>`)}
+          </select></label>
+      </div>
+      <div class="note-grid" style="margin-bottom:16px">
+        ${notes.map((n, i) => html`<button type="button" key=${n} class=${'note-tile' + (i === 0 ? ' is-root' : '')}
+          onClick=${() => A.playNote(n, i === 0 || T.noteIndex(n) > T.noteIndex(root) ? 4 : 5)}>
+          <span>${showIntervals ? names[i] : n}</span><small>${showIntervals ? n : names[i]}</small></button>`)}
+      </div>
+      <${Piano} scale=${set} root=${root} />
+      <div style="margin-top:14px"><${Fretboard} mode="scale" notes=${set} root=${root} /></div>
+      ${triads.length ? html`<div style="margin-top:14px">
+        <div class="label" style="margin-bottom:8px">Diatoniske akkorder <span class="hint">klik for at åbne i Chord Lab</span></div>
+        <div class="prog-chords">${triads.map((c, i) => html`<button type="button" key=${c} class="chord-pill"
+          onClick=${() => { onPickChord(c); A.playChord(T.chordVoicing(c, 4), { duration: 1.4 }); }}>
+          <small class="muted" style="margin-right:6px">${i + 1}</small>${c}</button>`)}</div></div>` : null}
+      <div class="legend" style="margin-top:14px">
+        <span><i style="background:var(--teal)"></i>i skalaen</span>
+        <span><i style="background:var(--accent)"></i>grundtone</span>
+        <span>Klik på tangenter og felter for at høre tonen</span>
+      </div>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chord Lab
+  // ---------------------------------------------------------------------------
+  function ChordLab({ chord, progression, bpm, onChord, compact = false, autoplay = 0 }) {
+    const [input, setInput] = useState(chord || 'C');
+    const [now, setNow] = useState(-1);
+    const timers = useRef([]);
+    const playRef = useRef(null);
+    useEffect(() => { if (chord) setInput(chord); }, [chord]);
+    useEffect(() => () => timers.current.forEach(clearTimeout), []);
+    useEffect(() => { if (autoplay && playRef.current) playRef.current(); }, [autoplay]);
+
+    const parsed = useMemo(() => T.parseChord(input), [input]);
+    const voicing = useMemo(() => (parsed ? T.chordVoicing(parsed.symbol, 4) : []), [parsed]);
+    const midis = useMemo(() => new Set(voicing.map((v) => v.midi)), [voicing]);
+    const notesSet = useMemo(() => new Set(voicing.map((v) => v.note)), [voicing]);
+    const shape = useMemo(() => (parsed ? T.guitarShape(parsed.symbol) : null), [parsed]);
+
+    const stopProg = () => {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+      setNow(-1);
+    };
+    const playProg = async () => {
+      if (!progression || !progression.length) return;
+      stopProg();
+      await A.resume();
+      const beat = 60 / (Number(bpm) || 100);
+      const bar = beat * 4;
+      progression.forEach((c, i) => {
+        A.playChord(T.chordVoicing(c, 4), { delay: i * bar, duration: bar * 0.95, strum: 0.04 });
+        timers.current.push(setTimeout(() => { setNow(i); if (onChord) onChord(c); }, i * bar * 1000));
+      });
+      timers.current.push(setTimeout(() => setNow(-1), progression.length * bar * 1000));
+    };
+    playRef.current = playProg;
+
+    return html`<div class=${compact ? '' : 'card'}>
+      ${!compact ? html`<div class="card-head">
+        <span class="section-icon"><${Icon} name="disc" /></span>
+        <div><div class="card-title">Chord Lab</div><div class="card-sub">Voicing på klaver og guitar</div></div>
+      </div>` : null}
+      <div class="row" style="margin-bottom:14px">
+        <label class="field" style="min-width:160px"><span class="label">Akkord</span>
+          <input class=${'input mono' + (parsed ? '' : ' is-invalid')} value=${input} spellcheck="false"
+            onInput=${(e) => { setInput(e.target.value); const p = T.parseChord(e.target.value); if (p && onChord) onChord(p.symbol); }}
+            placeholder="fx F#m7, Bbmaj7, G/B" aria-label="Akkordsymbol" /></label>
+        <div class="field"><span class="label">${'\u00a0'}</span>
+          <div class="row">
+            <button class="btn btn-primary" disabled=${!parsed} onClick=${() => A.playChord(voicing, { duration: 1.8 })}>
+              <${Icon} name="play" fill /> Afspil akkord</button>
+            ${progression && progression.length ? html`<button class="btn" onClick=${now >= 0 ? stopProg : playProg}>
+              <${Icon} name=${now >= 0 ? 'stop' : 'play'} fill /> ${now >= 0 ? 'Stop' : 'Afspil progression'}</button>` : null}
+          </div></div>
+        ${parsed ? html`<div class="grow small muted" style="align-self:end">
+          <b class="mono" style="color:var(--text)">${parsed.symbol}</b> · ${parsed.label} · toner: <span class="mono">${T.chordNotes(parsed.symbol).join(' ')}</span>
+        </div>` : html`<div class="grow small" style="align-self:end;color:var(--danger)">Ukendt akkordsymbol</div>`}
+      </div>
+      ${progression && progression.length ? html`<div class="prog-chords" style="margin-bottom:14px">
+        ${progression.map((c, i) => html`<${Fragment} key=${c + i}>
+          <button type="button" class=${'chord-pill' + (now === i ? ' is-now' : parsed && parsed.symbol === T.parseChord(c)?.symbol ? ' is-active' : '')}
+            onClick=${() => { setInput(c); if (onChord) onChord(c); A.playChord(T.chordVoicing(c, 4), { duration: 1.4 }); }}>${c}</button>
+          ${i < progression.length - 1 ? html`<span class="chord-arrow">→</span>` : null}
+        <//>`)}
+      </div>` : null}
+      <div class="grid-2">
+        <div>
+          <div class="label" style="margin-bottom:8px">Klaver</div>
+          <${Piano} chordMidis=${midis} chord=${notesSet} root=${parsed?.root} />
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:8px">Guitar ${shape ? html`<span class="hint">${shape.barre ? `barré fra ${shape.base}. bånd` : 'åben stilling'}</span>` : html`<span class="hint">akkordtoner på gribebrættet</span>`}</div>
+          <${Fretboard} mode=${shape ? 'chord' : 'scale'} shape=${shape} notes=${notesSet} root=${parsed?.root} />
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rhythm Lab (step sequencer)
+  // ---------------------------------------------------------------------------
+  const TRACKS = [
+    { key: 'kick', name: 'Kick', color: '#ff7a1a' },
+    { key: 'snare', name: 'Snare', color: '#ff4d6d' },
+    { key: 'hihat', name: 'Hi-hat', color: '#2dd4bf' },
+    { key: 'clap', name: 'Clap', color: '#8b7cff' },
+  ];
+  const S = (str) => str.split('').map((c) => c === 'x');
+  const PRESETS = {
+    'Basic rock': { kick: S('x...x...x...x...'), snare: S('....x.......x...'), hihat: S('x.x.x.x.x.x.x.x.'), clap: S('................') },
+    'Four on the floor': { kick: S('x...x...x...x...'), snare: S('................'), hihat: S('..x...x...x...x.'), clap: S('....x.......x...') },
+    Disco: { kick: S('x...x...x...x...'), snare: S('....x.......x...'), hihat: S('xxxxxxxxxxxxxxxx'), clap: S('....x.......x...') },
+    Breakbeat: { kick: S('x.....x..x..x...'), snare: S('....x..x....x...'), hihat: S('.x.x.x.x.x.x.x.x'), clap: S('................') },
+    Trap: { kick: S('x.....x...x.....'), snare: S('........x.......'), hihat: S('x.xxx.x.x.xxx.xx'), clap: S('........x.......') },
+    'Lo-fi': { kick: S('x......x..x.....'), snare: S('....x.......x..x'), hihat: S('x.x.x.xxx.x.x.x.'), clap: S('................') },
+    Reggaeton: { kick: S('x...x...x...x...'), snare: S('...x..x....x..x.'), hihat: S('x.x.x.x.x.x.x.x.'), clap: S('................') },
+  };
+  const emptyPattern = () => Object.fromEntries(TRACKS.map((t) => [t.key, Array(16).fill(false)]));
+
+  function RhythmLab({ initialBpm }) {
+    const [pattern, setPattern] = useState(() => PRESETS['Basic rock']);
+    const [muted, setMuted] = useState({});
+    const [bpm, setBpm] = useState(() => Math.min(220, Math.max(40, parseInt(initialBpm, 10) || 100)));
+    const [swing, setSwing] = useState(0);
+    const [playing, setPlaying] = useState(false);
+    const [head, setHead] = useState(-1);
+    const [preset, setPreset] = useState('Basic rock');
+    const patternRef = useRef(pattern);
+    const mutedRef = useRef(muted);
+    const seq = useRef(null);
+    const taps = useRef([]);
+    patternRef.current = pattern;
+    mutedRef.current = muted;
+
+    useEffect(() => {
+      seq.current = A.createSequencer({
+        steps: 16, bpm, swing,
+        onStep: (i, t) => {
+          const p = patternRef.current;
+          const m = mutedRef.current;
+          TRACKS.forEach((tr) => { if (p[tr.key][i] && !m[tr.key]) A.drum(tr.key, t, i % 4 === 0 ? 1 : 0.8); });
+        },
+        onVisual: setHead,
+      });
+      return () => seq.current && seq.current.stop();
+    }, []);
+    useEffect(() => { if (seq.current) seq.current.setBpm(bpm); }, [bpm]);
+    useEffect(() => { if (seq.current) seq.current.setSwing(swing); }, [swing]);
+
+    const toggle = async () => {
+      if (playing) { seq.current.stop(); setPlaying(false); return; }
+      await seq.current.start();
+      setPlaying(true);
+    };
+    const toggleCell = (k, i) => setPattern((p) => ({ ...p, [k]: p[k].map((v, j) => (j === i ? !v : v)) }));
+    const loadPreset = (name) => { setPreset(name); setPattern(PRESETS[name]); };
+    const randomize = () => {
+      setPreset('');
+      setPattern({
+        kick: Array.from({ length: 16 }, (_, i) => i % 4 === 0 || Math.random() < 0.15),
+        snare: Array.from({ length: 16 }, (_, i) => i % 8 === 4 || Math.random() < 0.08),
+        hihat: Array.from({ length: 16 }, (_, i) => i % 2 === 0 || Math.random() < 0.3),
+        clap: Array.from({ length: 16 }, () => Math.random() < 0.1),
+      });
+    };
+    const tap = () => {
+      const t = performance.now();
+      taps.current = taps.current.filter((x) => t - x < 2500).concat(t).slice(-8);
+      if (taps.current.length >= 2) {
+        const diffs = taps.current.slice(1).map((x, i) => x - taps.current[i]);
+        const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+        setBpm(Math.round(Math.min(220, Math.max(40, 60000 / avg))));
+      }
+      A.playDrum('hihat', 0.6);
+    };
+
+    return html`<div class="card">
+      <div class="card-head">
+        <span class="section-icon violet"><${Icon} name="activity" /></span>
+        <div><div class="card-title">Rhythm Lab</div><div class="card-sub">16-step sequencer med swing og tap tempo</div></div>
+        <div class="card-actions">
+          <button class="btn btn-sm" onClick=${randomize}><${Icon} name="shuffle" /> Tilfældig</button>
+          <button class="btn btn-sm" onClick=${() => { setPreset(''); setPattern(emptyPattern()); }}><${Icon} name="trash" /> Ryd</button>
+          <button class=${'btn btn-sm ' + (playing ? 'btn-danger' : 'btn-primary')} onClick=${toggle} aria-pressed=${playing}>
+            <${Icon} name=${playing ? 'stop' : 'play'} fill /> ${playing ? 'Stop' : 'Afspil'}</button>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:18px;align-items:end">
+        <div class="field">
+          <span class="label">Tempo</span>
+          <div class="row">
+            <div class="bpm-display">${bpm}<small>BPM</small></div>
+            <button class="btn btn-sm" onClick=${tap} title="Tap tempo">Tap</button>
+          </div>
+          <input type="range" min="40" max="220" value=${bpm} onInput=${(e) => setBpm(Number(e.target.value))} aria-label="BPM" />
+        </div>
+        <label class="field"><span class="label">Swing <span class="hint">${Math.round(swing * 100)}%</span></span>
+          <input type="range" min="0" max="50" value=${Math.round(swing * 100)} onInput=${(e) => setSwing(Number(e.target.value) / 100)} /></label>
+        <label class="field"><span class="label">Preset</span>
+          <select class="select" value=${preset} onChange=${(e) => loadPreset(e.target.value)}>
+            <option value="" disabled>Vælg…</option>
+            ${Object.keys(PRESETS).map((p) => html`<option key=${p} value=${p}>${p}</option>`)}
+          </select></label>
+      </div>
+      <div class="seq">
+        <div class="seq-ruler"><span></span><div>${Array.from({ length: 16 }, (_, i) => html`<span key=${i} class=${i % 4 === 0 ? 'beat' : ''}>${i % 4 === 0 ? i / 4 + 1 : '·'}</span>`)}</div></div>
+        ${TRACKS.map((tr) => html`<div class="seq-row" key=${tr.key}>
+          <div class=${'seq-label' + (muted[tr.key] ? ' is-muted' : '')}>
+            <button type="button" title="Mute / unmute" onClick=${() => setMuted((m) => ({ ...m, [tr.key]: !m[tr.key] }))}>
+              <span class="track-dot" style=${{ background: tr.color }}></span>${tr.name}</button>
+          </div>
+          <div class="seq-cells" style=${{ '--track': tr.color }}>
+            ${pattern[tr.key].map((on, i) => html`<button type="button" key=${i} role="checkbox" aria-checked=${on}
+              aria-label=${`${tr.name} step ${i + 1}`}
+              class=${'cell' + (on ? ' is-on' : '') + (i % 4 === 0 ? ' is-beat' : '') + (head === i ? ' is-head' : '')}
+              onClick=${() => toggleCell(tr.key, i)} />`)}
+          </div>
+        </div>`)}
+      </div>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Views
+  // ---------------------------------------------------------------------------
+  const GENRES = ['Pop', 'Indie', 'Hip-hop', 'R&B', 'House', 'Techno', 'Lo-fi', 'Rock', 'Folk', 'Jazz', 'Ambient', 'Synthwave'];
+  const MOODS = ['Energisk', 'Melankolsk', 'Drømmende', 'Rå', 'Varm', 'Mørk', 'Legende', 'Episk', 'Intim'];
+  const BPMS = ['72', '85', '92', '100', '110', '120', '128', '140', '174'];
+
+  function InputView({ params, setParams, onGenerate, onCancel, loading, error, settings }) {
+    const set = (k) => (e) => setParams({ ...params, [k]: e.target.value });
+    const pick = (k) => (v) => setParams({ ...params, [k]: params[k] === v ? '' : v });
+    const key = T.parseKey(params.key);
+    const cfg = activeConfig(settings);
+    const meta = AI.PROVIDERS[cfg.provider];
+    return html`<div class="view">
+      <div class="hero">
+        <div class="eyebrow">Session</div>
+        <h1 class="hero-title">Hvad arbejder <em>du</em> på?</h1>
+        <p class="hero-sub">Beskriv projektet, så bygger din AI-coach konkrete forslag til akkorder, melodi, groove, arrangement og next steps. Alt kan afprøves i værktøjerne bagefter.</p>
+      </div>
+      ${error ? html`<div class="alert err" style="margin-bottom:16px"><${Icon} name="alert" /><div>${error}</div></div>` : null}
+      <div class="card">
+        <div class="form-grid">
+          <div class="field">
+            <label class="label" for="f-genre">Genre</label>
+            <input id="f-genre" class="input" value=${params.genre} onInput=${set('genre')} placeholder="fx Indie pop, Techno" />
+            <${Chips} options=${GENRES} value=${params.genre} onPick=${pick('genre')} />
+          </div>
+          <div class="field">
+            <label class="label" for="f-mood">Mood / stemning</label>
+            <input id="f-mood" class="input" value=${params.mood} onInput=${set('mood')} placeholder="fx Melankolsk men håbefuld" />
+            <${Chips} options=${MOODS} value=${params.mood} onPick=${pick('mood')} color="teal" />
+          </div>
+          <div class="field">
+            <label class="label" for="f-bpm">BPM</label>
+            <input id="f-bpm" class="input mono" inputmode="numeric" value=${params.bpm} onInput=${set('bpm')} placeholder="fx 120 eller 90-100" />
+            <${Chips} options=${BPMS} value=${params.bpm} onPick=${pick('bpm')} />
+          </div>
+          <div class="field">
+            <label class="label" for="f-key">Toneart <span class="hint">${key ? `${key.root} ${key.mode === 'minor' ? 'mol' : 'dur'} genkendt` : 'fx "Am", "F# mol", "Bb dur"'}</span></label>
+            <input id="f-key" class="input mono" value=${params.key} onInput=${set('key')} placeholder="fx Am, D dur, F#m" />
+            <div class="chips">
+              ${['C', 'G', 'D', 'A', 'E', 'F', 'Bb', 'Eb'].map((r) => html`<button type="button" key=${r} class=${'chip' + (key && key.root === T.normalizeNote(r) && key.mode === 'major' ? ' is-on' : '')} onClick=${() => setParams({ ...params, key: r })}>${r}</button>`)}
+              ${['Am', 'Em', 'Dm', 'Bm', 'F#m', 'Cm', 'Gm'].map((r) => html`<button type="button" key=${r} class=${'chip teal' + (key && key.root === T.normalizeNote(r) && key.mode === 'minor' ? ' is-on' : '')} onClick=${() => setParams({ ...params, key: r })}>${r}</button>`)}
+            </div>
+          </div>
+          <div class="field span-2">
+            <label class="label" for="f-ref">Referencer</label>
+            <input id="f-ref" class="input" value=${params.references} onInput=${set('references')} placeholder="fx The Weeknd, Fred again.., Phoebe Bridgers" />
+          </div>
+          <div class="field span-2">
+            <label class="label" for="f-existing">Eksisterende materiale</label>
+            <textarea id="f-existing" class="textarea" value=${params.existing} onInput=${set('existing')} placeholder="Riff, tekstlinje, loop, demo – hvad har du allerede?"></textarea>
+          </div>
+          <div class="field">
+            <label class="label" for="f-constraints">Begrænsninger</label>
+            <input id="f-constraints" class="input" value=${params.constraints} onInput=${set('constraints')} placeholder="fx kun software, 2 timer, ingen vokal" />
+          </div>
+          <div class="field">
+            <label class="label" for="f-goals">Mål</label>
+            <input id="f-goals" class="input" value=${params.goals} onInput=${set('goals')} placeholder="fx radio-klar single, live-sæt, portfolio" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:22px">
+          ${loading
+            ? html`<button class="btn btn-lg btn-danger" onClick=${onCancel}><${Icon} name="x" /> Afbryd</button>
+                   <div class="grow"><div class="progress-line"></div><div class="small muted" style="margin-top:8px">Arbejder via <b>${meta.label}</b>${cfg.model ? html` · <span class="mono">${cfg.model}</span>` : ''}…</div></div>`
+            : html`<button class="btn btn-lg btn-primary" onClick=${onGenerate}><${Icon} name="sparkles" /> Generér forslag</button>
+                   <span class="small muted">eller <span class="kbd">Ctrl</span> + <span class="kbd">↵</span></span>
+                   <span class="grow"></span>
+                   <span class="small muted">${meta.id === 'demo' ? 'Demo-tilstand: ingen AI-kald. Vælg en provider under ' : 'Kører via '}<b>${meta.id === 'demo' ? '⚙ AI' : meta.label}</b></span>`}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function ToolsView({ params, chordLab, setChordLab }) {
+    return html`<div class="view stack">
+      <div class="hero" style="margin-bottom:6px">
+        <div class="eyebrow">Værktøjer</div>
+        <h1 class="hero-title">Hør det, <em>før</em> du bygger det</h1>
+      </div>
+      <${ScaleLab} initialKey=${params.key} onPickChord=${(c) => setChordLab({ ...chordLab, chord: c })} />
+      <${ChordLab} chord=${chordLab.chord} progression=${chordLab.progression} bpm=${params.bpm} onChord=${(c) => setChordLab((s) => ({ ...s, chord: c }))} />
+      <${RhythmLab} initialBpm=${params.bpm} />
+    </div>`;
+  }
+
+  const SECTIONS = [
+    { key: 'questions', title: 'Afklarende spørgsmål', icon: 'help', tone: 'violet', list: 'q' },
+    { key: 'directions', title: 'Kreative retninger', icon: 'compass', tone: '' },
+    { key: 'melodies', title: 'Melodiske ideer', icon: 'music', tone: 'teal' },
+    { key: 'rhythm', title: 'Rytme & groove', icon: 'activity', tone: 'violet' },
+    { key: 'arrangement', title: 'Arrangement', icon: 'layers', tone: '' },
+    { key: 'production', title: 'Produktion & mix', icon: 'sliders', tone: 'teal' },
+    { key: 'lyrics', title: 'Tekst & temaer', icon: 'feather', tone: 'warn' },
+    { key: 'actions', title: 'Next steps', icon: 'target', tone: 'ok', list: 'check' },
+  ];
+
+  function ResultsView({ result, chordLab, setChordLab, onCopy, onDownload, onRedo }) {
+    if (!result) {
+      return html`<div class="view card"><div class="empty"><${Icon} name="sparkles" size=${42} />
+        <div><b>Ingen resultater endnu</b></div><div>Udfyld projektinfo og tryk Generér forslag.</div></div></div>`;
+    }
+    const s = result.suggestions;
+    const m = result.meta || {};
+    const activeProg = chordLab.progression;
+    const playProg = (p) => setChordLab({ chord: p.chords[0], progression: p.chords, autoplay: Date.now() });
+    return html`<div class="view stack">
+      <div class="hero" style="margin-bottom:4px">
+        <div class="eyebrow">Resultater</div>
+        <h1 class="hero-title">Din <em>kreative</em> plan</h1>
+      </div>
+      <div class="summary">
+        ${s.summary ? html`<p>${s.summary}</p>` : null}
+        <div class="meta-line">
+          <span><b>${AI.PROVIDERS[m.provider]?.label || m.provider || '—'}</b>${m.model ? html` · <span class="mono">${m.model}</span>` : ''}</span>
+          ${m.durationMs ? html`<span>${(m.durationMs / 1000).toFixed(1)} s</span>` : null}
+          ${m.usage && (m.usage.input_tokens || m.usage.prompt_tokens) ? html`<span>${(m.usage.input_tokens || m.usage.prompt_tokens)} → ${(m.usage.output_tokens || m.usage.completion_tokens || 0)} tokens</span>` : null}
+          ${m.usage && m.usage.cache_read_input_tokens ? html`<span>cache: ${m.usage.cache_read_input_tokens}</span>` : null}
+          <span>${new Date(result.timestamp).toLocaleString('da-DK')}</span>
+        </div>
+        <div class="row">
+          <button class="btn btn-sm" onClick=${onCopy}><${Icon} name="copy" /> Kopiér som Markdown</button>
+          <button class="btn btn-sm" onClick=${onDownload}><${Icon} name="download" /> Download JSON</button>
+          <button class="btn btn-sm btn-ghost" onClick=${onRedo}><${Icon} name="refresh" /> Kør igen</button>
+        </div>
+      </div>
+
+      ${s.chords.length ? html`<div class="card">
+        <div class="card-head">
+          <span class="section-icon"><${Icon} name="disc" /></span>
+          <div><div class="card-title">Akkordprogressioner</div><div class="card-sub">Klik på en akkord for voicing – eller afspil hele progressionen</div></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:${activeProg ? '18px' : '0'}">
+          ${s.chords.map((p, i) => html`<div key=${i} class=${'prog' + (activeProg === p.chords ? ' is-active' : '')}>
+            <div class="prog-head">
+              <span class="prog-label">${p.label}</span>
+              <span class="grow"></span>
+              ${p.chords.length ? html`<button class="btn btn-sm" onClick=${() => playProg(p)}><${Icon} name="play" fill /> Afspil</button>` : null}
+            </div>
+            ${p.chords.length ? html`<div class="prog-chords">
+              ${p.chords.map((c, j) => html`<${Fragment} key=${c + j}>
+                <button type="button" class=${'chord-pill' + (chordLab.chord === c && activeProg === p.chords ? ' is-active' : '')}
+                  onClick=${() => { setChordLab({ chord: c, progression: p.chords }); A.playChord(T.chordVoicing(c, 4), { duration: 1.4 }); }}>${c}</button>
+                ${j < p.chords.length - 1 ? html`<span class="chord-arrow">→</span>` : null}
+              <//>`)}
+            </div>` : null}
+            ${p.note ? html`<div class="prog-note">${p.note}</div>` : null}
+          </div>`)}
+        </div>
+        ${activeProg ? html`<${ChordLab} compact chord=${chordLab.chord} progression=${activeProg} bpm=${result.params?.bpm} autoplay=${chordLab.autoplay}
+          onChord=${(c) => setChordLab((st) => ({ ...st, chord: c }))} />` : null}
+      </div>` : null}
+
+      <div class="grid-2">
+        ${SECTIONS.filter((sec) => s[sec.key] && s[sec.key].length).map((sec) => html`<div class="card" key=${sec.key}>
+          <div class="card-head">
+            <span class=${'section-icon ' + sec.tone}><${Icon} name=${sec.icon} /></span>
+            <div class="card-title">${sec.title}</div>
+          </div>
+          <ul class=${'list ' + (sec.list || '')}>${s[sec.key].map((it, i) => html`<li key=${i}>${it}</li>`)}</ul>
+        </div>`)}
+      </div>
+    </div>`;
+  }
+
+  function HistoryView({ history, onLoad, onDelete, onClear }) {
+    return html`<div class="view stack">
+      <div class="hero" style="margin-bottom:4px">
+        <div class="eyebrow">Historik</div>
+        <h1 class="hero-title">Tidligere <em>sessioner</em></h1>
+      </div>
+      ${history.length === 0
+        ? html`<div class="card"><div class="empty"><${Icon} name="clock" size=${42} /><div>Ingen gemte sessioner endnu.</div></div></div>`
+        : html`<div class="card">
+          <div class="card-head"><div class="card-sub">Gemmes lokalt i din browser (seneste 20)</div>
+            <div class="card-actions"><button class="btn btn-sm btn-danger" onClick=${onClear}><${Icon} name="trash" /> Ryd alt</button></div></div>
+          <div class="stack" style="gap:10px">
+            ${history.map((hItem) => html`<div class="prog hist-item" key=${hItem.timestamp}>
+              <div>
+                <div class="title">${[hItem.params.genre, hItem.params.mood, hItem.params.key, hItem.params.bpm && hItem.params.bpm + ' BPM'].filter(Boolean).join(' · ') || 'Uden titel'}</div>
+                <div class="sub">${new Date(hItem.timestamp).toLocaleString('da-DK')} · ${AI.PROVIDERS[hItem.meta?.provider]?.label || hItem.meta?.provider || ''}${hItem.suggestions.summary ? ' · ' + hItem.suggestions.summary.slice(0, 90) + (hItem.suggestions.summary.length > 90 ? '…' : '') : ''}</div>
+              </div>
+              <div class="row" style="flex-wrap:nowrap">
+                <button class="btn btn-sm" onClick=${() => onLoad(hItem)}><${Icon} name="arrow" /> Åbn</button>
+                <button class="btn btn-sm btn-icon btn-ghost" aria-label="Slet" onClick=${() => onDelete(hItem.timestamp)}><${Icon} name="x" /></button>
+              </div>
+            </div>`)}
+          </div>
+        </div>`}
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Settings drawer
+  // ---------------------------------------------------------------------------
+  function SettingsDrawer({ settings, onChange, onClose, toast }) {
+    const meta = AI.PROVIDERS[settings.provider];
+    const cfg = settings.configs[meta.id] || {};
+    const [status, setStatus] = useState(null);
+    const [models, setModels] = useState([]);
+    const [testing, setTesting] = useState(false);
+    const setCfg = (patch) => onChange({ ...settings, configs: { ...settings.configs, [meta.id]: { ...cfg, ...patch } } });
+    useEffect(() => { setStatus(null); setModels([]); }, [settings.provider]);
+    useEffect(() => {
+      const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+      window.addEventListener('keydown', onKey);
+      return () => window.removeEventListener('keydown', onKey);
+    }, [onClose]);
+
+    const test = async () => {
+      setTesting(true);
+      setStatus(null);
+      try {
+        const client = AI.createClient(activeConfig(settings));
+        const r = await client.ping(); // EXTERNAL CALL (except demo)
+        setStatus(r);
+        if (r.ok) {
+          setModels(r.models);
+          if (!cfg.model && r.models.length && meta.id !== 'demo') setCfg({ model: r.models[0] });
+          toast(`Forbundet til ${meta.label} (${r.latencyMs} ms)`, 'ok');
+        }
+      } catch (e) {
+        setStatus({ ok: false, error: e.message });
+      } finally {
+        setTesting(false);
+      }
+    };
+
+    return html`<${Fragment}>
+      <div class="drawer-backdrop" onClick=${onClose}></div>
+      <aside class="drawer" role="dialog" aria-modal="true" aria-label="AI-indstillinger">
+        <div class="drawer-head">
+          <span class="section-icon"><${Icon} name="settings" /></span>
+          <h2>AI-indstillinger</h2>
+          <span class="grow"></span>
+          <button class="btn btn-icon btn-ghost" aria-label="Luk" onClick=${onClose}><${Icon} name="x" /></button>
+        </div>
+        <div class="provider-list" role="radiogroup" aria-label="Provider">
+          ${Object.values(AI.PROVIDERS).map((p) => html`<button type="button" key=${p.id} role="radio" aria-checked=${settings.provider === p.id}
+            class=${'provider-opt' + (settings.provider === p.id ? ' is-on' : '')} onClick=${() => onChange({ ...settings, provider: p.id })}>
+            <span class="radio"></span>
+            <span><b>${p.label}</b><small>${p.hint}</small></span>
+            <span class=${'tag ' + (p.id === 'demo' ? 'demo' : p.local ? '' : 'cloud')}>${p.id === 'demo' ? 'demo' : p.local ? 'lokal' : 'cloud'}</span>
+          </button>`)}
+        </div>
+        ${meta.id !== 'demo' ? html`<${Fragment}>
+          <label class="field"><span class="label">Base URL</span>
+            <input class="input mono" value=${cfg.baseUrl ?? meta.baseUrl} onInput=${(e) => setCfg({ baseUrl: e.target.value })} spellcheck="false" /></label>
+          ${meta.needsKey || meta.id === 'openai_compatible' ? html`<label class="field">
+            <span class="label">API-nøgle ${meta.needsKey ? '' : html`<span class="hint">valgfri</span>`}</span>
+            <input class="input mono" type="password" autocomplete="off" value=${cfg.apiKey || ''} placeholder=${meta.keyPrefix ? meta.keyPrefix + '…' : ''}
+              onInput=${(e) => setCfg({ apiKey: e.target.value })} /></label>` : null}
+          <label class="field"><span class="label">Model <span class="hint">${models.length ? `${models.length} fundet` : ''}</span></span>
+            <input class="input mono" list="ms-models" value=${cfg.model ?? meta.defaultModel} placeholder=${meta.defaultModel || 'fx llama3.1, qwen2.5:7b'} spellcheck="false"
+              onInput=${(e) => setCfg({ model: e.target.value })} />
+            <datalist id="ms-models">${models.map((mName) => html`<option key=${mName} value=${mName} />`)}</datalist></label>
+          <div class="row">
+            <button class="btn" onClick=${test} disabled=${testing}>${testing ? html`<span class="spinner"></span>` : html`<${Icon} name="zap" />`} Test forbindelse${meta.local ? ' & hent modeller' : ''}</button>
+            ${status ? html`<div class=${'status-line ' + (status.ok ? 'ok' : 'err')}><span class="dot"></span>${status.ok ? `OK · ${status.latencyMs} ms` : status.error}</div>` : null}
+          </div>
+          ${meta.local ? html`<div class="alert info"><${Icon} name="info" /><div>${meta.hint}${meta.id === 'ollama' ? html`<br /><span class="mono small">OLLAMA_ORIGINS="*" ollama serve</span>` : ''}</div></div>` : html`<div class="alert warn"><${Icon} name="alert" /><div>Nøglen gemmes kun i denne browsers localStorage og sendes direkte til ${meta.label}. Del aldrig denne side med nøglen gemt.</div></div>`}
+        <//>` : html`<div class="alert info"><${Icon} name="info" /><div>Demo-tilstand genererer deterministiske forslag ud fra toneart og genre – helt uden netværk. Vælg Ollama eller LM Studio for rigtig lokal AI.</div></div>`}
+        <label class="field"><span class="label">Kreativitet (temperature) <span class="hint">${settings.temperature.toFixed(1)}</span></span>
+          <input type="range" min="0" max="1.5" step="0.1" value=${settings.temperature} onInput=${(e) => onChange({ ...settings, temperature: Number(e.target.value) })} /></label>
+        <div class="row">
+          <button class="btn btn-primary" onClick=${onClose}><${Icon} name="check" /> Færdig</button>
+          ${cfg.apiKey ? html`<button class="btn btn-ghost btn-danger" onClick=${() => setCfg({ apiKey: '' })}>Ryd nøgle</button>` : null}
+          <span class="grow"></span>
+          <span class="small muted">SDK v${AI.VERSION}</span>
+        </div>
+      </aside>
+    <//>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // App
+  // ---------------------------------------------------------------------------
+  const TABS = [
+    { id: 'input', label: 'Input', icon: 'edit' },
+    { id: 'tools', label: 'Værktøjer', icon: 'sliders' },
+    { id: 'results', label: 'Resultater', icon: 'sparkles' },
+    { id: 'history', label: 'Historik', icon: 'clock' },
+  ];
+
+  function App() {
+    const [tab, setTabRaw] = useState(() => store.get(KEYS.tab, 'input'));
+    const [params, setParamsRaw] = useState(loadParams);
+    const [settings, setSettingsRaw] = useState(loadSettings);
+    const [history, setHistoryRaw] = useState(() => store.get(KEYS.history, []));
+    const [result, setResult] = useState(() => store.get(KEYS.history, [])[0] || null);
+    const [chordLab, setChordLab] = useState({ chord: '', progression: null });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [drawer, setDrawer] = useState(false);
+    const [toasts, setToasts] = useState([]);
+    const abortRef = useRef(null);
+
+    const setTab = useCallback((t) => { setTabRaw(t); store.set(KEYS.tab, t); window.scrollTo({ top: 0 }); }, []);
+    const setParams = useCallback((p) => { setParamsRaw(p); store.set(KEYS.params, p); }, []);
+    const setSettings = useCallback((s) => { setSettingsRaw(s); store.set(KEYS.settings, s); }, []);
+    const setHistory = useCallback((hs) => { setHistoryRaw(hs); store.set(KEYS.history, hs); }, []);
+    const toast = useCallback((text, kind = 'info') => {
+      const id = Date.now() + Math.random();
+      setToasts((t) => [...t, { id, text, kind }]);
+      setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4200);
+    }, []);
+
+    const cancel = useCallback(() => { if (abortRef.current) abortRef.current.abort(); }, []);
+
+    const generate = useCallback(async () => {
+      if (loading) return;
+      const cfg = activeConfig(settings);
+      const client = AI.createClient(cfg);
+      try {
+        client.validate();
+      } catch (e) {
+        setError(e.message);
+        setDrawer(true);
+        return;
+      }
+      setLoading(true);
+      setError('');
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+      try {
+        // EXTERNAL CALL: LLM request (none in demo mode).
+        const { suggestions, meta } = await client.generateSuggestions(params, { signal: ctrl.signal });
+        const entry = { timestamp: new Date().toISOString(), params: { ...params }, suggestions, meta: { provider: meta.provider, model: meta.model, durationMs: meta.durationMs, usage: meta.usage } };
+        setResult(entry);
+        setHistory([entry, ...history].slice(0, 20));
+        setChordLab({ chord: '', progression: null });
+        setTab('results');
+        toast(`Forslag klar via ${AI.PROVIDERS[meta.provider]?.label || meta.provider} på ${(meta.durationMs / 1000).toFixed(1)} s`, 'ok');
+      } catch (e) {
+        if (e && e.code === 'aborted') { toast('Afbrudt', 'info'); } else {
+          const msg = e && e.message ? e.message : 'Ukendt fejl';
+          setError(msg);
+          toast(msg, 'err');
+          if (e && (e.code === 'missing_key' || e.code === 'bad_key' || e.code === 'missing_model' || e.code === 'auth')) setDrawer(true);
+        }
+      } finally {
+        setLoading(false);
+        abortRef.current = null;
+      }
+    }, [loading, settings, params, history, setHistory, setTab, toast]);
+
+    // Keyboard shortcuts (refs → one listener, never stale between renders)
+    const liveRef = useRef({});
+    liveRef.current = { generate, drawer };
+    useEffect(() => {
+      const onKey = (e) => {
+        const live = liveRef.current;
+        const tag = (e.target && e.target.tagName) || '';
+        const typing = /INPUT|TEXTAREA|SELECT/.test(tag);
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); live.generate(); return; }
+        if (typing || live.drawer || e.ctrlKey || e.metaKey || e.altKey) return;
+        const idx = ['1', '2', '3', '4'].indexOf(e.key);
+        if (idx >= 0) setTab(TABS[idx].id);
+        if (e.key === ',') setDrawer(true);
+      };
+      window.addEventListener('keydown', onKey);
+      return () => window.removeEventListener('keydown', onKey);
+    }, [setTab]);
+
+    // Warn only while a request is in flight.
+    useEffect(() => {
+      if (!loading) return undefined;
+      const h2 = (e) => { e.preventDefault(); e.returnValue = ''; };
+      window.addEventListener('beforeunload', h2);
+      return () => window.removeEventListener('beforeunload', h2);
+    }, [loading]);
+
+    const copyMarkdown = async () => {
+      if (!result) return;
+      const md = AI.suggestionsToMarkdown(result.suggestions, result.params);
+      try {
+        await navigator.clipboard.writeText(md);
+        toast('Markdown kopieret', 'ok');
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = md;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); toast('Markdown kopieret', 'ok'); } catch { toast('Kunne ikke kopiere', 'err'); }
+        ta.remove();
+      }
+    };
+    const downloadJSON = () => {
+      if (!result) return;
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `musiksparring-${result.timestamp.slice(0, 19).replace(/[:T]/g, '-')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    const cfg = activeConfig(settings);
+    const meta = AI.PROVIDERS[cfg.provider];
+    const pillClass = meta.id === 'demo' ? 'is-demo' : meta.local ? 'is-local' : 'is-cloud';
+
+    return html`<${Fragment}>
+      <header class="topbar">
+        <a class="brand" href="#" onClick=${(e) => { e.preventDefault(); setTab('input'); }}>
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="brand-name">MusikSparring<small>Pro · AI Creative Coach</small></span>
+        </a>
+        <span class="topbar-spacer"></span>
+        <button class=${'provider-pill ' + pillClass + (loading ? ' is-busy' : '')} onClick=${() => setDrawer(true)} title="AI-indstillinger (,)">
+          <span class="dot"></span><span><b>${meta.id === 'demo' ? 'Demo' : meta.label.replace(/\s*\(.*\)$/, '')}</b>${cfg.model && meta.id !== 'demo' ? ` · ${cfg.model}` : ''}</span>
+          <${Icon} name="settings" size=${15} />
+        </button>
+      </header>
+      <nav class="nav" aria-label="Hovedmenu">
+        ${TABS.map((t2, i) => html`<button key=${t2.id} class=${'nav-btn' + (tab === t2.id ? ' is-active' : '')} onClick=${() => setTab(t2.id)}
+          aria-current=${tab === t2.id ? 'page' : undefined} title=${`${t2.label} (${i + 1})`}>
+          <${Icon} name=${t2.icon} size=${22} />${t2.label}
+          ${t2.id === 'results' && result && tab !== 'results' ? html`<span class="badge" aria-hidden="true"></span>` : null}
+        </button>`)}
+      </nav>
+      <main class="main"><div class="container">
+        ${tab === 'input' ? html`<${InputView} params=${params} setParams=${setParams} onGenerate=${generate} onCancel=${cancel} loading=${loading} error=${error} settings=${settings} />` : null}
+        ${tab === 'tools' ? html`<${ToolsView} params=${params} chordLab=${chordLab} setChordLab=${setChordLab} />` : null}
+        ${tab === 'results' ? html`<${ResultsView} result=${result} chordLab=${chordLab} setChordLab=${setChordLab} onCopy=${copyMarkdown} onDownload=${downloadJSON} onRedo=${() => { setTab('input'); generate(); }} />` : null}
+        ${tab === 'history' ? html`<${HistoryView} history=${history}
+          onLoad=${(hItem) => { setResult(hItem); setParams({ ...EMPTY_PARAMS, ...hItem.params }); setChordLab({ chord: '', progression: null }); setTab('results'); }}
+          onDelete=${(ts) => setHistory(history.filter((x) => x.timestamp !== ts))}
+          onClear=${() => { if (window.confirm('Slet hele historikken?')) setHistory([]); }} />` : null}
+        <footer class="foot">MusikSparring Pro v3 · Lokal-først: dine data forlader kun browseren, når du selv vælger en cloud-provider. · Genveje: 1–4 skifter fane, <span class="kbd">,</span> åbner AI-indstillinger</footer>
+      </div></main>
+      ${drawer ? html`<${SettingsDrawer} settings=${settings} onChange=${setSettings} onClose=${() => setDrawer(false)} toast=${toast} />` : null}
+      <${Toasts} items=${toasts} />
+    <//>`;
+  }
+
+  render(html`<${App} />`, document.getElementById('root'));
+})();
+
+</script>
+</body>
+</html>

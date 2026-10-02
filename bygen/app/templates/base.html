@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ site_title }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='vendor/bulma.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar is-primary" aria-label="Hovednavigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item has-text-weight-bold" href="/">{{ site_title }}</a>
+      </div>
+      <div class="navbar-end">
+        <div class="navbar-item">
+          <a class="button is-light" href="/pages/new">Ny side</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <section class="section">
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </section>
+  <script src="{{ url_for('static', path='js/app.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

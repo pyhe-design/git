@@ -1,0 +1,22 @@
+{
+  "name": "musiksparring",
+  "version": "3.0.0",
+  "private": true,
+  "description": "MusikSparring Pro – AI creative coach for musicians with a local-first AI SDK",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/sdk.test.mjs && node tests/smoke.mjs",
+    "check": "npm run lint && npm run build && npm test"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "htm": "^3.1.1",
+    "playwright": "^1.63.0",
+    "preact": "^10.29.8"
+  }
+}

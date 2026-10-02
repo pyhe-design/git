@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a0b0f" />
+  <meta name="description" content="MusikSparring Pro – AI creative coach for musikere med lokal-først AI (Ollama, LM Studio) og indbyggede musikværktøjer." />
+  <title>MusikSparring Pro</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ff7a1a'/%3E%3Crect x='14' y='30' width='7' height='20' rx='3' fill='%23fff'/%3E%3Crect x='25' y='18' width='7' height='32' rx='3' fill='%23fff'/%3E%3Crect x='36' y='24' width='7' height='26' rx='3' fill='%23fff'/%3E%3Crect x='47' y='12' width='7' height='38' rx='3' fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <div id="root"></div>
+  <noscript>MusikSparring kræver JavaScript.</noscript>
+
+  <!-- Vendored UI runtime (no CDN, no build step) -->
+  <script src="vendor/preact.umd.js"></script>
+  <script src="vendor/preact-hooks.umd.js"></script>
+  <script src="vendor/htm.umd.js"></script>
+
+  <!-- MusikSparring modules -->
+  <script src="sdk/musiksparring-ai.js"></script>
+  <script src="src/theory.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

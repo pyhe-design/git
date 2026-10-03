@@ -186,4 +186,5 @@ layout and labelling hold up at phone width.
 
 ## Licence
 
-MIT. Vendored Preact and htm are MIT, copied verbatim; see `vendor/VERSIONS`.
+MIT, see [LICENSE](LICENSE). Vendored Preact and htm are MIT, copied verbatim;
+see `vendor/VERSIONS`.

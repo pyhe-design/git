@@ -105,14 +105,26 @@ export class Mixer {
     this.cancelAutoFade();
   }
 
-  /** One pass: sample both decks, run the drift corrector, publish. */
-  tick() {
+  /**
+   * Re-read both decks right now, outside the poll loop.
+   *
+   * Anything that acts on a clock value the user just changed must call this
+   * first: the cached samples can be up to one tick (~66 ms) old, and a seek
+   * made just before hitting SYNC would otherwise be captured as an offset
+   * that is wrong by however far the deck moved.
+   */
+  refreshSamples() {
     const now = Date.now();
     for (const id of IDS) {
       const deck = this.decks[id];
       if (deck) this.samples[id] = { ...deck.sample(), sampledAt: now };
     }
-    this.runSync(now);
+  }
+
+  /** One pass: sample both decks, run the drift corrector, publish. */
+  tick() {
+    this.refreshSamples();
+    this.runSync(Date.now());
     this.notify();
   }
 
@@ -239,6 +251,7 @@ export class Mixer {
       this.sync = { ...this.sync, enabled: false };
       this.syncStatus = 'sync off';
     } else {
+      this.refreshSamples();
       const offset = captureOffset(this.samples[leader].time, this.samples[other(leader)].time);
       this.sync = { ...this.sync, enabled: true, leader, offset, lastCorrectionAt: 0 };
       this.syncStatus = `locked to deck ${leader.toUpperCase()}`;
@@ -250,6 +263,7 @@ export class Mixer {
   /** Seek the follower onto the lock immediately, bypassing the deadband. */
   snapToLock() {
     if (!this.sync.enabled) return;
+    this.refreshSamples();
     const follower = this.follower();
     const target = Math.max(0, this.samples[this.sync.leader].time + this.sync.offset);
     this.decks[follower]?.seek(target, true);
@@ -263,6 +277,7 @@ export class Mixer {
    * @param {number} delta seconds.
    */
   nudge(delta) {
+    this.refreshSamples();
     const follower = this.follower();
     if (this.sync.enabled) {
       this.sync = { ...this.sync, offset: this.sync.offset + delta, lastCorrectionAt: 0 };
@@ -350,6 +365,7 @@ export class Mixer {
 
   /** Pin the beat grid to wherever the deck is now. @param {DeckId} id */
   setAnchorHere(id) {
+    this.refreshSamples();
     this.channels[id].anchor = this.samples[id].time;
     this.notify();
     this.onEvent('announce', { message: `Deck ${id.toUpperCase()} downbeat set` });
@@ -357,6 +373,7 @@ export class Mixer {
 
   /** Drop a cue point at the playhead. @param {DeckId} id */
   addCue(id) {
+    this.refreshSamples();
     const cues = this.channels[id].cues;
     if (cues.length >= 8) cues.shift();
     cues.push(this.samples[id].time);

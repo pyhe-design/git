@@ -1,0 +1,25 @@
+{
+  "name": "ytdj",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Two-deck DJ console for YouTube videos: dual IFrame players, equal-power crossfader, offset sync and a zero-dependency Node server",
+  "type": "module",
+  "engines": { "node": ">=20.11" },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "lint": "eslint .",
+    "test": "node --test tests/core.test.mjs tests/server.test.mjs",
+    "test:smoke": "node tests/smoke.mjs",
+    "check": "npm run lint && npm test && npm run test:smoke"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "htm": "^3.1.1",
+    "playwright": "^1.63.0",
+    "preact": "^10.29.8"
+  }
+}

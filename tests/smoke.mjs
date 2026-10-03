@@ -242,31 +242,47 @@ try {
   // ------------------------------------------------------------------- sync
   await page.evaluate(() => {
     window.__ytStub.seeks.length = 0;
-    // Shove deck B well off the lock so the corrector has to act.
+    // Shove deck B well off deck A so the captured offset is unmistakable.
     window.__ytStub.players[1].seekTo(80, true);
   });
   await page.click('button:has-text("Sync off")');
   await page.waitForSelector('button:has-text("Sync on")', { timeout: 5000 });
   check('sync engages', true);
+  // Engaging must capture the offset from live clocks, not from the last poll,
+  // so a seek immediately beforehand is still reflected.
+  const captured = await page.evaluate(() => {
+    const row = [...document.querySelectorAll('.readout dt')].find((d) => d.textContent === 'Offset');
+    return row?.nextElementSibling?.textContent ?? '';
+  });
+  check(
+    'the captured offset reflects a seek made just before engaging',
+    /\+7\d\.\d\d s/.test(captured),
+    `offset reads ${captured}`,
+  );
 
   const offsetText = await page.textContent('.readout');
   check('sync captured a non-zero offset', /[+−]\d+\.\d\d s/.test(offsetText ?? ''), offsetText?.slice(0, 120) ?? '');
 
-  await page.evaluate(() => {
-    window.__ytStub.seeks.length = 0;
-    // Drag deck B 3 seconds off its lock; the corrector should seek it back.
+  // Drag deck B off its lock, then count seeks from a baseline taken in the
+  // same evaluate. Clearing the log *after* the nudge would be a race: the
+  // corrector ticks at 15 Hz and can fire between the two statements, and
+  // wiping that correction leaves it in cooldown with nothing left to correct.
+  const stillLocked = await page.$('button:has-text("Sync on")');
+  check('sync is still engaged before the drift test', Boolean(stillLocked));
+
+  const seekBaseline = await page.evaluate(() => {
     const b = window.__ytStub.players[1];
     b.seekTo(b.getCurrentTime() + 3, true);
-    window.__ytStub.seeks.length = 0;
+    return window.__ytStub.seeks.length;
   });
-  await page.waitForFunction(() => window.__ytStub.seeks.length > 0, undefined, { timeout: 6000 });
-  const corrections = await page.evaluate(() => window.__ytStub.seeks.length);
+  await page.waitForFunction((n) => window.__ytStub.seeks.length > n, seekBaseline, { timeout: 8000 });
+  const corrections = await page.evaluate((n) => window.__ytStub.seeks.length - n, seekBaseline);
   check('the drift corrector seeks the follower back onto its lock', corrections > 0, `${corrections} seeks`);
 
   // The deadband must stop it from seeking continuously.
   await page.waitForTimeout(2500);
-  const after = await page.evaluate(() => window.__ytStub.seeks.length);
-  check('the deadband stops the corrector thrashing', after <= 4, `${after} seeks over ~2.5 s`);
+  const after = await page.evaluate((n) => window.__ytStub.seeks.length - n, seekBaseline);
+  check('the deadband stops the corrector thrashing', after <= 4, `${after} corrective seeks over ~2.5 s`);
 
   await page.click('button:has-text("Sync on")');
   await page.waitForSelector('button:has-text("Sync off")', { timeout: 5000 });

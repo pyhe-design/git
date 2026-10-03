@@ -1,6 +1,7 @@
 /** Server tests. Boots on port 0 and talks to it over real HTTP. */
 import { strict as assert } from 'node:assert';
 import { after, before, describe, it } from 'node:test';
+import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -276,6 +277,10 @@ describe('http surface', () => {
   });
 
   it('serves from the project root by default', () => {
-    assert.ok(PROJECT_ROOT.endsWith('ytdj'));
+    // Assert what the path must *contain*, not what the checkout is called:
+    // the directory name is whatever the repository was cloned into.
+    assert.ok(existsSync(join(PROJECT_ROOT, 'index.html')), `no index.html in ${PROJECT_ROOT}`);
+    assert.ok(existsSync(join(PROJECT_ROOT, 'package.json')), `no package.json in ${PROJECT_ROOT}`);
+    assert.ok(existsSync(join(PROJECT_ROOT, 'server', 'server.js')), `no server/ in ${PROJECT_ROOT}`);
   });
 });

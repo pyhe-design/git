@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI OS Dashboard</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script type="module" src="/static/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true">◆</span> AI OS</div>
+    <nav aria-label="Main">
+      <a href="#/overview" data-view="overview">Overview</a>
+      <a href="#/agents" data-view="agents">Agents</a>
+      <a href="#/console" data-view="console">Console</a>
+      <a href="#/runs" data-view="runs">Runs</a>
+    </nav>
+    <span id="provider" class="pill" title="Active LLM provider">…</span>
+  </header>
+
+  <main>
+    <section id="view-overview" class="view" aria-labelledby="h-overview">
+      <div class="view-head">
+        <h1 id="h-overview">Overview</h1>
+        <label class="inline">Window
+          <select id="window">
+            <option value="1">Today</option>
+            <option value="7" selected>7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+          </select>
+        </label>
+      </div>
+      <div id="kpis" class="kpis" aria-live="polite"></div>
+      <div class="charts">
+        <figure class="card chart" id="chart-runs"><figcaption>Runs per day</figcaption><div class="plot"></div></figure>
+        <figure class="card chart" id="chart-cost"><figcaption>Estimated cost per day (USD)</figcaption><div class="plot"></div></figure>
+      </div>
+      <div class="card">
+        <h2>By agent</h2>
+        <div class="table-wrap"><table id="agent-table">
+          <thead><tr><th>Agent</th><th class="num">Runs</th><th class="num">Errors</th><th class="num">Tokens</th><th class="num">Cost</th><th class="num">Avg latency</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="view-agents" class="view" aria-labelledby="h-agents" hidden>
+      <div class="view-head"><h1 id="h-agents">Agents</h1><button id="new-agent" type="button">New agent</button></div>
+      <div class="split">
+        <ul id="agent-list" class="list" aria-label="Agents"></ul>
+        <form id="agent-form" class="card form" autocomplete="off">
+          <h2 id="agent-form-title">New agent</h2>
+          <input type="hidden" name="id">
+          <label>Name <input name="name" required maxlength="80"></label>
+          <div class="row">
+            <label>Model <select name="model" id="model-select"></select></label>
+            <label>Effort <select name="effort">
+              <option>low</option><option selected>medium</option><option>high</option><option>xhigh</option><option>max</option>
+            </select></label>
+          </div>
+          <label>System prompt <textarea name="system_prompt" rows="10" required
+            placeholder="Stable instructions. Sent with cache_control so repeat runs read it from the prompt cache."></textarea></label>
+          <label class="check"><input type="checkbox" name="enabled" checked> Enabled</label>
+          <div class="actions">
+            <button type="submit">Save</button>
+            <button type="button" id="delete-agent" class="danger" hidden>Delete</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-console" class="view" aria-labelledby="h-console" hidden>
+      <div class="view-head"><h1 id="h-console">Console</h1></div>
+      <form id="run-form" class="card form">
+        <label>Agent <select name="agent" id="run-agent" required></select></label>
+        <label>Prompt <textarea name="prompt" rows="6" required placeholder="Ask the agent something…"></textarea></label>
+        <div class="actions"><button type="submit" id="run-btn">Run <kbd>Ctrl</kbd>+<kbd>Enter</kbd></button></div>
+      </form>
+      <article id="run-result" class="card" hidden aria-live="polite">
+        <header class="run-meta"></header>
+        <pre class="output"></pre>
+      </article>
+    </section>
+
+    <section id="view-runs" class="view" aria-labelledby="h-runs" hidden>
+      <div class="view-head"><h1 id="h-runs">Runs</h1><button id="refresh-runs" type="button">Refresh</button></div>
+      <div class="card table-wrap">
+        <table id="runs-table">
+          <thead><tr><th>When</th><th>Agent</th><th>Model</th><th>Status</th><th class="num">In</th><th class="num">Out</th><th class="num">Cache read</th><th class="num">Cost</th><th class="num">Latency</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="tooltip" class="tooltip" role="status" hidden></div>
+  <div id="toast" class="toast" role="alert" hidden></div>
+</body>
+</html>

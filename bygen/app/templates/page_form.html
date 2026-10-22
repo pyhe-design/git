@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ "Redigér" if page else "Ny side" }} · {{ site_title }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='vendor/font-awesome/css/font-awesome.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='vendor/simplemde.min.css') }}">
+{% endblock %}
+{% block content %}
+<h1 class="title">{{ "Redigér: " ~ page.title if page else "Ny side" }}</h1>
+{% if error %}
+<div class="notification is-danger is-light" role="alert">{{ error }}</div>
+{% endif %}
+<form method="post" action="{{ action }}">
+  <div class="field">
+    <label class="label" for="title">Titel</label>
+    <div class="control">
+      <input class="input" id="title" name="title" type="text" maxlength="200" required
+             value="{{ title }}" autofocus>
+    </div>
+  </div>
+  <div class="field">
+    <label class="label" for="body_md">Indhold</label>
+    <div class="control">
+      <textarea id="body_md" name="body_md" class="textarea" rows="16">{{ body_md }}</textarea>
+    </div>
+  </div>
+  <div class="field is-grouped">
+    <div class="control"><button class="button is-primary" type="submit">Gem</button></div>
+    <div class="control">
+      <a class="button is-light" href="{{ '/pages/' ~ page.slug if page else '/' }}">Annullér</a>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='vendor/simplemde.min.js') }}" defer></script>
+<script src="{{ url_for('static', path='js/editor.js') }}" defer></script>
+{% endblock %}

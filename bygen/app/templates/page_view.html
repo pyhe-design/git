@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · {{ site_title }}{% endblock %}
+{% block content %}
+<div class="level">
+  <div class="level-left">
+    <h1 class="title level-item">{{ page.title }}</h1>
+  </div>
+  <div class="level-right">
+    <a class="button is-link is-light level-item" href="/pages/{{ page.slug }}/edit">Redigér</a>
+    <form class="level-item" method="post" action="/pages/{{ page.slug }}/delete"
+          data-confirm="Slet siden &quot;{{ page.title }}&quot;?">
+      <button class="button is-danger is-light" type="submit">Slet</button>
+    </form>
+  </div>
+</div>
+<div class="box">
+  <div class="content">{{ body_html | safe }}</div>
+</div>
+<p class="has-text-grey is-size-7">Sidst opdateret {{ page.updated_at.strftime('%d-%m-%Y %H:%M') }}</p>
+{% endblock %}
